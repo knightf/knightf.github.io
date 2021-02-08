@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>线性回归 on 韩飞的博客</title>
+    <link>https://knightf.coding.me/tags/%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/index.xml</link>
+    <description>Recent content in 线性回归 on 韩飞的博客</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <atom:link href="https://knightf.coding.me/tags/%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>机器学习 第一章 线性回归</title>
+      <link>https://knightf.coding.me/post/linear-regression/</link>
+      <pubDate>Fri, 17 Feb 2017 17:22:16 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/linear-regression/</guid>
+      <description>
+
+&lt;p&gt;对于由 &lt;code&gt;$m$&lt;/code&gt; 个 &lt;code&gt;$n$&lt;/code&gt; 维的特征向量 &lt;code&gt;$x_n$&lt;/code&gt; 构成的数据集，我们希望求得一个函数形如：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$h_\theta(x)=\theta_0+\theta_1x_1+\cdots+\theta_nx_n$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;来反应特征向量 &lt;code&gt;$x_n$&lt;/code&gt; 与其对应结果 &lt;code&gt;$y_n$&lt;/code&gt; 的关系。&lt;/p&gt;
+
+&lt;p&gt;为了简化我们的书写，默认 &lt;code&gt;$x_0=1$&lt;/code&gt;，有👇式：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$h(x)=\sum_{i=0}^n\theta_ix_i=\theta^Tx$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看到 &lt;code&gt;$\theta$&lt;/code&gt; 与 &lt;code&gt;$x$&lt;/code&gt; 现在都是长度为 &lt;code&gt;$n+1$&lt;/code&gt; 的向量。&lt;/p&gt;
+
+&lt;p&gt;此处我们定义 &lt;code&gt;成本函数&lt;/code&gt; (cost function) 如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$J(\theta)=\frac{1}{2}\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;梯度下降&#34;&gt;梯度下降&lt;/h1&gt;
+
+&lt;p&gt;所以我们现在需要确定 &lt;code&gt;$\theta$&lt;/code&gt; 的值来让 &lt;code&gt;$J(\theta)$&lt;/code&gt; 取到最小值。采用梯度下降算法，不断更新 &lt;code&gt;$\theta$&lt;/code&gt; 的值直到收敛：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta_j:=\theta_j-\alpha\frac{\partial}{\partial\theta_j}J(\theta)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;此处 &lt;code&gt;$\alpha$&lt;/code&gt; 被称作 &lt;code&gt;学习速率&lt;/code&gt; 。把 &lt;code&gt;$J(\theta)$&lt;/code&gt; 带入👆的式子并求解偏微分后得到更新 &lt;code&gt;$\theta$&lt;/code&gt; 的规则如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta_j:=\theta_j+\alpha(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这被称作 &lt;code&gt;LMS&lt;/code&gt; (least mean squares) 更新规则。所以我们的算法就可以这样写：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;直到收敛 {&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;对每一个 j&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$\theta_j:=\theta_j+\alpha\sum_{i=1}^m(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;}&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这种方法叫做 &lt;code&gt;批量梯度下降&lt;/code&gt; (batch gradient descent) 。与之对应，还有一种方法是这样的：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;循环 {&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;i 从 1 循环至 m&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;对每一个 j&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$\theta_j:=\theta_j+\alpha(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;}&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看到这种方法每处理一条训练集中的样本时，我们只根据当前样本误差做了计算并更新。这种方法叫做 &lt;code&gt;随机梯度下降&lt;/code&gt; (stochastic gradient descent) 。&lt;/p&gt;
+
+&lt;h1 id=&#34;常规方程&#34;&gt;常规方程&lt;/h1&gt;
+
+&lt;p&gt;除了采用梯度下降这种迭代算法来最小化 &lt;code&gt;$J$&lt;/code&gt; ，还可以直接用代数计算出值。我们定义 &lt;code&gt;设计矩阵&lt;/code&gt; &lt;code&gt;$X$&lt;/code&gt; 为 m 行 n 列的矩阵。 &lt;code&gt;$X$&lt;/code&gt; 的每一行都是一个样本所有特征的转置：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$X=\begin{bmatrix}(x^{(1)})^T\\(x^{(2)})^T\\\vdots\\(x^{(m)})^T\end{bmatrix}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;同样的我们定义 &lt;code&gt;$\vec y$&lt;/code&gt; 是包含对应所有样本的结果集：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\vec y=\begin{bmatrix}y^{(1)}\\y^{(2)}\\\vdots\\y^{(m)}\end{bmatrix}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这样我们就可以发现 &lt;code&gt;$X, \vec y$&lt;/code&gt; 与 &lt;code&gt;$J(\theta)$&lt;/code&gt; 之间的关系：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\frac{1}{2}(X\theta-\vec y)^T(X\theta-\vec y) &amp;amp;=&amp;amp; \frac{1}{2}\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2 \\
+&amp;amp;=&amp;amp; J(\theta)
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;进而我们就可以求得 &lt;code&gt;$J(\theta)$&lt;/code&gt; 的偏微分向量为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\nabla J(\theta) &amp;amp;=&amp;amp; \nabla_\theta\frac{1}{2}(X\theta-\vec y)^T(X\theta-\vec y) \\
+&amp;amp;=&amp;amp; X^TX\theta-X^T\vec y
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;如果令 &lt;code&gt;$J$&lt;/code&gt; 取最小值，则令偏微分向量为零，得到了 &lt;code&gt;常规方程&lt;/code&gt; (normal equations) ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$X^TX\theta=X^T\vec y$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;我们就可以直接求得 &lt;code&gt;$\theta$&lt;/code&gt; 了：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta=(X^TX)^{-1}X^T\vec y$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;概率学解释&#34;&gt;概率学解释&lt;/h1&gt;
+
+&lt;p&gt;上面我们直接给定了 &lt;code&gt;成本函数&lt;/code&gt; &lt;code&gt;$J$&lt;/code&gt; 的形式。那么为什么用上面给出的形式就是最好的衡量方式呢？我们先假设样本、误差和结果之间的关系如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$y^{(i)}=\theta^Tx^{(i)}+\epsilon^{(i)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中 &lt;code&gt;$\epsilon^{(i)}$&lt;/code&gt; 代表模型给出的预测值与实际值的误差，不论是由没能抓住特征引起的，还是就是随机的噪声误差。我们再假设 &lt;code&gt;$\epsilon^{(i)}\sim\mathcal{N}(0,\sigma^2)$&lt;/code&gt;，概率符合高斯分布：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(\epsilon^{(i)})=\frac{1}{\sqrt{2\pi}\sigma}exp(-\frac{(\epsilon^{(i)})^2}{2\sigma^2})$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这就说明：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(y^{(i)}|x^{(i)};\theta)=\frac{1}{\sqrt{2\pi}\sigma}exp(-\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2\sigma^2})$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;但是我们现在关心的是 &lt;code&gt;$\theta$&lt;/code&gt; 这个变量，因为求假设函数 &lt;code&gt;$h_\theta$&lt;/code&gt; 的过程其实就是求出 &lt;code&gt;$\theta$&lt;/code&gt; 的过程。我们希望可以构造一个函数使 &lt;code&gt;$\theta$&lt;/code&gt; 成为自变量，然后把它叫做 &lt;code&gt;似然函数&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$L(\theta)=L(\theta;X,\vec y)=p(\vec y|X; \theta)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;由误差是独立的这一假设我们可以给出下面的式子：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+L(\theta) &amp;amp;=&amp;amp; \prod_{i=1}^mp(y^{(i)}|x^{(i)};\theta) \\
+&amp;amp;=&amp;amp; \prod_{i=1}^m\frac{1}{\sqrt{2\pi}\sigma}exp(-\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2\sigma^2})
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;由最大似然估计的原理我们知道应该找到使函数 &lt;code&gt;$L(\theta)$&lt;/code&gt; 的 &lt;code&gt;$\theta$&lt;/code&gt; 的值，为此我们需要对函数求导。为了简化求导的过程，我们使用 &lt;code&gt;对数似然函数&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\mathcal{l}(\theta) &amp;amp;=&amp;amp; \log L(\theta) \\
+&amp;amp;=&amp;amp; \log\prod_{i=1}^m\frac{1}{\sqrt{2\pi}\sigma}exp(\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2\sigma^2}) \\
+&amp;amp;=&amp;amp; \sum_{i=1}^m\log\frac{1}{\sqrt{2\pi}\sigma}exp(\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2\sigma^2}) \\
+&amp;amp;=&amp;amp; m\log\frac{1}{\sqrt{2\pi}\sigma}-\frac{1}{\sigma^2}\centerdot\frac{1}{2}\sum_{i=1}^{m}(y^{(i)}-\theta^Tx^{(i)})^2
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;就可以观察得到我们求 &lt;code&gt;$\mathcal{l}(\theta)$&lt;/code&gt; 的最大值其实就是求下面式子的最小值：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\frac{1}{2}\sum_{i=1}^m(y^{(i)}-\theta^Tx^{(i)})^2$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;也就是我们一开始提出的函数 &lt;code&gt;$J(\theta)$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;h1 id=&#34;就近权重线性回归&#34;&gt;就近权重线性回归&lt;/h1&gt;
+
+&lt;p&gt;在上面提出的原始的线性回归算法中，如果要想对某个点 &lt;code&gt;$x$&lt;/code&gt; 作出预测，我们这么做：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;找到使 &lt;code&gt;$\sum_i(y^{(i)}-\theta^Tx^{(i)})^2$&lt;/code&gt; 取得最小值的 &lt;code&gt;$\theta$&lt;/code&gt; 。&lt;/li&gt;
+&lt;li&gt;输出 &lt;code&gt;$\theta^Tx$&lt;/code&gt; 。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;不同的是，就近权重线性回归算法这么做：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;找到使 &lt;code&gt;$\sum_iw^{(i)}(y^{(i)}-\theta^Tx^{(i)})^2$&lt;/code&gt; 取得最小值的 &lt;code&gt;$\theta$&lt;/code&gt; 。&lt;/li&gt;
+&lt;li&gt;输出 &lt;code&gt;$\theta^Tx$&lt;/code&gt; 。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;这里的 &lt;code&gt;$w^{(i)}$&lt;/code&gt; 是一组非负数的 &lt;code&gt;权重&lt;/code&gt; 。如果对某 &lt;code&gt;$i$&lt;/code&gt; 而言 &lt;code&gt;$w^{(i)}$&lt;/code&gt; 的值很大，那么在计算 &lt;code&gt;$\theta$&lt;/code&gt; 的时候这一项占的成分就很大，反之则会对 &lt;code&gt;$\theta$&lt;/code&gt; 的影响就会很小。&lt;/p&gt;
+
+&lt;p&gt;一个比较标准的选择权重的函数是：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$w^{(i)}=\exp(-\frac{(x^{(i)}-x)^2}{2\tau^2})$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中的 &lt;code&gt;$\tau$&lt;/code&gt; 控制了重要权重的范围，所以叫做 &lt;code&gt;带宽&lt;/code&gt; (bandwidth) 参数，通常通过实验得出。&lt;/p&gt;
+
+&lt;p&gt;就近权重线性回归是一种 &lt;code&gt;非参数算法&lt;/code&gt; ，而普通的线性回归是一种 &lt;code&gt;参数算法&lt;/code&gt; 。前者不存储 &lt;code&gt;$\theta$&lt;/code&gt; 的值，而是每次预测时都要计算，后者则是只计算一次就可以了。&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

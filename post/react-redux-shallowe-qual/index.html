@@ -1,0 +1,241 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>一个连接React和Redux的注意事项 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>一个连接React和Redux的注意事项</h1>
+                    <h2 class="headline">
+                    June 21, 2016 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/javascript">JavaScript</a>
+                        
+                            <a href="https://knightf.coding.me/tags/react">React</a>
+                        
+                            <a href="https://knightf.coding.me/tags/redux">Redux</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    <p>用 <code>react-redux</code> 连接 <code>React</code> 和 <code>Redux</code> 的时候，需要 <code>mapStateToProps</code> 这个函数来把 <code>store</code> 里面的内容映射到组建的 <code>props</code> 里面。这个 <code>mapStateToProps</code> 函数并不会总是把值赋给组件，它会执行一个 <a href="https://github.com/reactjs/react-redux/blob/master/src/utils/shallowEqual.js"><code>shallowEqual</code></a> 函数，而这个函数就像它的名字一样忠诚的履行着“浅浅”的比较。</p>
+
+<pre><code class="language-javascript">export default function shallowEqual(objA, objB) {
+  if (objA === objB) {
+    return true
+  }
+
+  const keysA = Object.keys(objA)
+  const keysB = Object.keys(objB)
+
+  if (keysA.length !== keysB.length) {
+    return false
+  }
+
+  // Test for A's keys different from B.
+  const hasOwn = Object.prototype.hasOwnProperty
+  for (let i = 0; i &lt; keysA.length; i++) {
+    if (!hasOwn.call(objB, keysA[i]) ||
+        objA[keysA[i]] !== objB[keysA[i]]) {
+      return false
+    }
+  }
+
+  return true
+}
+</code></pre>
+
+<p><code>a</code> 和 <code>b</code> 的引用一样，返回 <code>true</code> 。<code>a</code> 和 <code>b</code> 的所有键的列表长度不一样，返回 <code>false</code> 。<code>a</code> 和 <code>b</code> 所有值的引用一样，所有键也都是自己的属性，那么就返回 <code>true</code> ，否则返回 <code>false</code>。</p>
+
+<p>如果你在 <code>redux</code> 里面的改动是在比较深的地方，那么很有可能 <code>react-redux</code> 在帮你绑定的时候，就把这个改动给忽视了，因为它只做浅层的比较。</p>
+
+<p>所以在写 <code>reducer</code> 的时候，记得要改变引用的地址，让它可以成功更新属性，触发 <code>render</code> 。</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

@@ -1,0 +1,272 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>机器学习 第十一章 主成分分析 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>机器学习 第十一章 主成分分析</h1>
+                    <h2 class="headline">
+                    June 1, 2017 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/machine-learning">Machine Learning</a>
+                        
+                            <a href="https://knightf.coding.me/tags/stanford-cs229">Stanford CS229</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<p>因子分析模型中，其实构建隐形变量 <code>$z$</code> 从某种程度上将 <code>$x$</code> 从 <code>$n$</code> 维空间映射到了 <code>$k$</code> 维更小的子空间中。主成分分析 (Principal Components Analysis) 同样试图将数据空间缩小，试图找到代表特征的子空间。但是主成分分析更加直接并且只需要计算矩阵的特征向量就可以，不需要再应用较为复杂的 EM算法 。</p>
+
+<p>而且有时也可能出现数据冗余的情况，例如几个特征可能都是线性相关的，对模型的描述没有实际意义。 PCA 同样可以解决这样的问题。 PCA 的预处理过程一般包括：</p>
+
+<ul>
+<li>令 <code>$\mu=\frac{1}{m}\sum_{i=1}^{m}x^{(i)}$</code></li>
+<li>用 <code>$x^{(i)}-\mu$</code> 替换 <code>$x^{(i)}$</code></li>
+<li>令 <code>$\sigma_{j}^{2}=\frac{1}{m}\sum_{i}{x_{j}^{(i)}}^{2}$</code></li>
+<li>用 <code>$x_{j}^{(i)}/\sigma_{j}$</code> 替换 <code>$x_{j}^{(i)}$</code></li>
+</ul>
+
+<p>前两步除掉了所有平均值的成分，后两步把所有方差考虑进去做了缩放，所有值都缩放到了同样的范围内。如果对数据有一定的了解那么后两步也可以跳过，比如对于用 RGB 数值的图片，它的值都是在 0~255 之间。</p>
+
+<p>现在如何找到数据中的主成分呢？也就是大概约束数据空间的向量 <code>$u$</code> 是多少呢？<strong>主要的目的，是找到一个向量，所有的数据都在这个向量的方向上投影过后得到的结果，其方差是最大的。</strong>这样就可以找到一个子空间，最有效的表述数据的特征。</p>
+
+<p><img src="/images/principal-components-analysis-pic1.jpg" alt="不同向量空间下的投影" /></p>
+
+<p>上图可以看出同样的数据集，投影到不同的向量空间后得到的点集，有着不同的方差。主成分分析就是试图找到类似图a中的向量。对于向量 <code>$u$</code> ，样本 <code>$x$</code> 在该向量空间上的投影结果距离原点的距离为 <code>$x^{T}u$</code> 。所以目标可以描述为求一个单位向量 <code>$u$</code> ，令下面的式子取到最大值：</p>
+
+<p><code>$$
+\begin{eqnarray}
+\frac{1}{m}\sum_{i=1}^{m}({x^{(i)}}^{T}u)^{2} &amp;=&amp; \frac{1}{m}\sum_{i=1}^{m}u^{T}x^{(i)}{x^{(i)}}^{T}u \\
+&amp;=&amp; u^{T}\left(\frac{1}{m}\sum_{i=1}^{m}x^{(i)}{x^{(i)}}^{T}\right)u
+\end{eqnarray}
+$$</code></p>
+
+<p>可见求最大值的过程是求协方差矩阵特征向量的过程。</p>
+
+<blockquote>
+<p>使用拉格朗日算子求解这个有限制的极值问题会得到 <code>$\Sigma{u}=\lambda{u}$</code>，表明 <code>$u$</code> 是协方差矩阵的特征向量。</p>
+</blockquote>
+
+<p>所以如果要找一个 1 维的子空间来近似数据集那么就要选择协方差公式的主特征向量；同样的，如果要找一个 <code>$k$</code> 维的子空间 (<code>$k&lt;n$</code>) 来近似数据集，那么就要选择协方差矩阵的前 <code>$k$</code> 个特征向量作为 <code>$u_1,\ldots,u_k$</code> 。这些 <code>$u_i's$</code> 代表了相互正交的空间基础。那么要基于这些基础表示 <code>$x^{(i)}$</code> ，需要计算对应的向量：</p>
+
+<p><code>$$
+y^{(i)} =
+\begin{bmatrix}
+u_{1}^{T}x^{(i)} \\
+u_{2}^{T}x^{(i)} \\
+\vdots \\
+u_{k}^{T}x^{(i)}
+\end{bmatrix} \in \mathcal{R}^{k}
+$$</code></p>
+
+<p>因此主成分分析法也同样被称为降维算法。<code>$u_1,\ldots,u_k$</code> 被叫做数据集的前 <code>$k$</code> 个主成分。</p>
+
+<p>主成分分析有许多应用。首先，其压缩数据维度的功能可以将高维度的数据降维，方便绘制出图像。其次，也可以在训练监督学习时减少输入数据的维度，减少计算量，避免过拟合。最后它也可以减少数据中的噪音，例如解决面部识别问题时，大小为 100*100 的图像需要 10000 维的向量表示，通过主成分分析可以减少维度得到 <code>特征脸</code> 进行有效的面部相似比较。</p>
+
+<h2 id="奇异值分解">奇异值分解</h2>
+
+<p><code>$m\times{n}$</code> 大小的样本空间对应的协方差矩阵大小为 <code>$n\times{n}$</code> 。由于协方差矩阵是对阵矩阵，所以它是可对角化的：</p>
+
+<p><code>$$\Sigma=VLV^{-1}$$</code></p>
+
+<p>其中 <code>$V$</code> 是包含特征向量的矩阵，矩阵的每一列代表一个特征向量。 <code>$L$</code> 是包含特征值的对角矩阵，它对角线上的值对应每个特征向量按照降序排列。而如果直接对样本构成的矩阵 <code>$X\in\mathbb{R}^{m\times{n}}$</code> 进行奇异值分解 (singular value decomposition) ，可以得到：</p>
+
+<p><code>$$X=USV^{T}$$</code></p>
+
+<p>其中 <code>$U\in\mathbb{R}^{m\times{m}}$</code> ， <code>$S\in\mathbb{R}^{m\times{n}}$</code> ， <code>$V^{T}\in\mathbb{R}^{n\times{n}}$</code> 。<code>$U$</code> 是酉矩阵。 <code>$S$</code> 是对角矩阵，对角线上的值是矩阵的奇异值。所以有：</p>
+
+<p><code>$$\Sigma=\frac{VSU^{T}USV^{T}}{n-1}=V\frac{S^{2}}{n-1}V^{T}$$</code></p>
+
+<p>所以通过奇异值分解得到的 <code>$V$</code> 就是包含特征向量的矩阵。可以通过奇异值分解，进行高纬度的主成分分析。</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

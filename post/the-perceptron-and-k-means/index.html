@@ -1,0 +1,307 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>机器学习 第八章 在线学习与K-means算法 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>机器学习 第八章 在线学习与K-means算法</h1>
+                    <h2 class="headline">
+                    May 12, 2017 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/machine-learning">Machine Learning</a>
+                        
+                            <a href="https://knightf.coding.me/tags/stanford-cs229">Stanford CS229</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<h1 id="感知器与大边界分类器">感知器与大边界分类器</h1>
+
+<p>考虑在线学习 (online learning) 这种在学习过程中就持续做出预测的情况。回忆感知器的预测公式：</p>
+
+<p><code>$$h_{\theta}(x)=g(\theta^{T}x)\tag{1}$$</code></p>
+
+<p>其中：</p>
+
+<p><code>$$
+g(z)=
+\begin{cases}
+1, &amp; \text{if $z\geq0$} \\
+-1, &amp; \text{if $z&lt;0$}
+\end{cases}
+$$</code></p>
+
+<p>给定训练样本感知器根据下面的方式更新参数。如果 <code>$h_{\theta}(x)=y$</code> ，那么参数不变；反之：</p>
+
+<p><code>$$\theta := \theta+yx$$</code></p>
+
+<p>下面的定理给出了感知器算法有关误差的限制。注意下面的限制与样本序列的数量和维度都没有关系。</p>
+
+<p><strong>定理</strong> 给定一个样本序列 <code>$(x^{(1)}, y^{(1)}),(x^{(2)},y^{(2)}),\ldots(x^{(m)},y^{(m)})$</code> 。如果对于所有 <code>$i$</code> 都有 <code>$||x^{(i)}||\leq D$</code> ，并且存在单位向量 <code>$u$</code> 使所有样本都有 <code>$y^{(i)}\cdot(u^{T}x^{(i)})\geq\gamma$</code> 。那么感知器在这个序列上产生错误的次数最多为 <code>$(D/\gamma)^2$</code> 。</p>
+
+<p>下面给出证明。</p>
+
+<p>根据上面的规则，感知器仅在结果错误的时候更新参数。令 <code>$\theta^{(k)}$</code> 代表发生第 <code>$k$</code> 次错误时的权值。由于初始值是零，就有 <code>$\theta^{(1)}=\overrightarrow{0}$</code> 。所以如果 <code>$g((x^{(i)})^{T}\theta^{(k)}) \neq y^{(i)}$</code> (因为是错误时的情况，值不一致) ，就表明：</p>
+
+<p><code>$$(x^{(i)})^{T}\theta^{(k)}y^{(i)} \leq 0 \tag{2}$$</code></p>
+
+<p>同时根据上面描述的参数更新规则，就有：</p>
+
+<p><code>$$
+\begin{eqnarray}
+(\theta^{(k+1)})^{T}u &amp;=&amp; (\theta^{(k)})^{T}u+y^{(i)}(x^{(i)})^{T}u \\
+&amp;\geq&amp; (\theta^{(k)})^{T}u + \gamma 
+\end{eqnarray}
+$$</code></p>
+
+<p>这是一个递推公式，所以展开就有：</p>
+
+<p><code>$$(\theta^{(k+1)})^{T}u \geq k\gamma \tag{3}$$</code></p>
+
+<p>并且还有下面的关系：</p>
+
+<p><code>$$
+\begin{eqnarray}
+{||\theta^{(k+1)}||}^{2} &amp;=&amp; {||\theta^{(k)}+y^{(i)}x^{(i)}||}^{2} \\
+&amp;=&amp; {||\theta^{(k)}||}^{2} + {||x^{(i)}||}^{2} + 2y^{(i)}{(x^{(i)})}^{T}\theta^{(i)} \\
+&amp;\leq&amp; {||\theta^{(k)}||}^{2} + {||x^{(i)}||}^{2} \\
+&amp;\leq&amp; {||\theta^{(k)}||}^{2} + D^{2} \tag{4}
+\end{eqnarray}
+$$</code></p>
+
+<p>上面推导过程的第2步到第3步应用了等式(2)。等式4表示出的递推关系说明：</p>
+
+<p><code>$${||\theta^{(k+1)}||}^{2} \leq kD^2 \tag{5}$$</code></p>
+
+<p>等式(3)和(4)结合起来，得到：</p>
+
+<p><code>$$
+\begin{eqnarray}
+\sqrt{k}D &amp;\geq&amp; ||\theta^{(k+1)}|| \\
+&amp;\geq&amp; {(\theta^{(k+1)})}^{T}u \\
+&amp;\geq&amp; k\gamma
+\end{eqnarray}
+$$</code></p>
+
+<p>所以得到了关系 <code>$k \leq (D/\gamma)^{2}$</code> 。也就是说，感知器发生了第 <code>$k$</code> 次错误时，<code>$k \leq (D/\gamma)^{2}$</code> 。</p>
+
+<h1 id="k-means-分类算法">K-means 分类算法</h1>
+
+<p>K-means 分类算法的内容如下：</p>
+
+<ul>
+<li>随机生成簇的中心 (cluster centroid) <code>$\mu_{1},\mu_{2},\ldots,\mu_{k}$</code>。</li>
+<li>重复下面的过程直到收敛：</li>
+</ul>
+
+<p>对所有 <code>$i$</code> 令：</p>
+
+<p><code>$$c^{(i)}:=\arg\min_{j}{{||x^{(i)}-\mu_{j}||}^{2}}$$</code></p>
+
+<p>对所有 <code>$j$</code> 令：</p>
+
+<p><code>$$\mu_{j} := \frac{\sum_{i=1}^{m}{1\{c^{(i)}=j\}x^{(i)}}}{\sum_{i=1}^{m}{1\{c^{(i)}=j\}}}$$</code></p>
+
+<p>在上面的算法中，<code>$k$</code> 是想要分成簇的个数。簇中心 <code>$\mu_{j}$</code> 代表当前分类的中心位置。</p>
+
+<p>内部的循环中算法不断重复这样两步：(1) 把训练样本 <code>$x^{(i)}$</code> 分配到离它最近的簇中心所属的簇中。 (2) 按照当前每个簇下的样本更新本簇的中心位置。</p>
+
+<p>K-means 算法一定收敛么？是的。定义失真函数 (distortion function) 如下：</p>
+
+<p><code>$$J(c,\mu)=\sum_{i=1}^{m}{{||x^{(i)}-\mu_{c^{(i)}}||}^{2}}$$</code></p>
+
+<p><code>$J$</code> 衡量每个样本与其簇中心的平方距离之和。可以发现 K-means 算法就是对 <code>$J$</code> 做坐标下降。在内部循环中先保持 <code>$\mu$</code> 不变，优化 <code>$c$</code> ；然后在保持 <code>$c$</code> 不变，优化 <code>$\mu$</code> 。所以 <code>$J$</code> 必然单调减并达到收敛。</p>
+
+<p><code>$J$</code> 有多个局部最优解。为得到全局最优解，通常计算多次并选取 <code>$J$</code> 的值最小的结果。</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

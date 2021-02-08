@@ -1,0 +1,351 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>机器学习 第三章 广义线性模型 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>机器学习 第三章 广义线性模型</h1>
+                    <h2 class="headline">
+                    March 1, 2017 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/machine-learning">Machine Learning</a>
+                        
+                            <a href="https://knightf.coding.me/tags/stanford-cs229">Stanford CS229</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<h1 id="指数家族概率分布">指数家族概率分布</h1>
+
+<p>我们定义能够按照下式的格式写出的概率分布，就属于 <code>指数家族概率分布</code> (exponential family) ：</p>
+
+<p><code>$$p(y;\eta)=b(y)exp(\eta^TT(y)-a(\eta))$$</code></p>
+
+<ul>
+<li><code>$\eta$</code> - <code>自然参数</code> (natural parameter)</li>
+<li><code>$T(y)$</code> - <code>充分统计量</code> (sufficient statistic)</li>
+<li><code>$a(\eta)$</code> - <code>对数配分函数</code> (partition function)</li>
+</ul>
+
+<p>固定的 <code>$T$</code> ， <code>$a$</code> 和  <code>$b$</code> 定义了一组以 <code>$\eta$</code> 为参数的概率分布；调整 <code>$\eta$</code> 就可以得到不同的分布。</p>
+
+<h2 id="伯努利分布">伯努利分布</h2>
+
+<p><code>$$\begin{eqnarray}
+P(y;\phi) &amp;=&amp; \phi^y(1-\phi)^{1-y} \\
+&amp;=&amp; \exp(y\log{\phi}+(1-y)\log{(1-\phi)}) \\
+&amp;=&amp; \exp((\log{(\frac{\phi}{1-\phi})})y+\log{(1-\phi)})
+\end{eqnarray}$$</code></p>
+
+<p><code>$$\begin{eqnarray}
+\eta &amp;=&amp; \log{(\frac{\phi}{1-\phi})} \\
+T(y) &amp;=&amp; y \\
+a(\eta) &amp;=&amp; -\log{(1-\phi)} \\
+&amp;=&amp; \log{(1+e^\eta)} \\
+b(y) &amp;=&amp; 1
+\end{eqnarray}$$</code></p>
+
+<p>值得注意的是，由于 <code>$\eta=\log{(\phi/(1-\phi))}$</code> ，我们就可以反推出 <code>$\phi=1/(1+e^{-\eta})$</code> ，也就是 <code>S函数</code> 。</p>
+
+<h2 id="高斯分布">高斯分布</h2>
+
+<p><code>$$\begin{eqnarray}
+p(y;\mu) &amp;=&amp; \frac{1}{\sqrt{2\pi}}\exp{(-\frac{1}{2}(y-\mu)^2)} \\
+&amp;=&amp; \frac{1}{\sqrt{2\pi}}\exp{(-\frac{1}{2}y^2)}\exp{(\mu y-\frac{1}{2}\mu^2)}
+\end{eqnarray}$$</code></p>
+
+<p><code>$$\begin{eqnarray}
+\eta &amp;=&amp; \mu \\
+T(y) &amp;=&amp; y \\
+a(\eta) &amp;=&amp; \mu^2/2 \\
+&amp;=&amp; \eta^2/2 \\
+b(y) &amp;=&amp; (1/\sqrt{2\pi})\exp{(-y^2/2)}
+\end{eqnarray}$$</code></p>
+
+<h1 id="构造广义线性模型">构造广义线性模型</h1>
+
+<p>我们可以看到伯努利分布和高斯分布都可以被写成指数家族分布的形式。下面我们来看看如何通过这样的指数家族分布来构造模型。</p>
+
+<p>不论我们是要解决回归问题还是分类问题，我们都是想要得到一个可以由 <code>$x$</code> 预测出 <code>$y$</code> 的函数。试图用广义线性模型来解决这个问题，我们需要给出以下三个假设：</p>
+
+<p><code>1.</code> <code>$y|x;\theta$</code> 属于以 <code>$\eta$</code> 为参数的指数家族概率分布。</p>
+
+<p><code>2.</code> 给定 <code>$x$</code> ，我们的目标是用 <code>$T(y)$</code> 来预测值。在我们的例子中 <code>$T(y)=y$</code>，所以这就是说我们希望我们的假设函数 <code>$h(x)$</code> 可以满足 <code>$h(x)=E[y|x]$</code>。</p>
+
+<p><code>3.</code> 自然参数 <code>$\eta$</code> 和输入的 <code>$x$</code> 是线性相关的：<code>$\eta=\theta^Tx$</code>。</p>
+
+<h2 id="普通最小平方-ordinary-least-squares">普通最小平方 (ordinary least squares)</h2>
+
+<p>设置目标变量 <code>$y$</code> 是连续的并且概率呈高斯分布。从我们之前得到的式子中我们发现在高斯分布的情况下 <code>$\mu=\eta$</code> ，所以：</p>
+
+<p><code>$$\begin{eqnarray}
+h_\theta(x) &amp;=&amp; E[y|x;\theta] \\
+&amp;=&amp; \mu \\
+&amp;=&amp; \eta \\
+&amp;=&amp; \theta^Tx
+\end{eqnarray}$$</code></p>
+
+<h2 id="逻辑回归">逻辑回归</h2>
+
+<p>逻辑回归中 <code>$y$</code> 的值不是 0 就是 1 ，所以我们采用伯努利分布来拟合。和上一节采用相同的思路，我们可以推导出：</p>
+
+<p><code>$$\begin{eqnarray}
+h_\theta(x) &amp;=&amp; E[y|x;\theta] \\
+&amp;=&amp; \phi \\
+&amp;=&amp; 1/(1+e^{-\eta}) \\
+&amp;=&amp; 1/(1+e^{-\theta^Tx})
+\end{eqnarray}$$</code></p>
+
+<h2 id="softmax-回归">Softmax 回归</h2>
+
+<p>考虑 <code>$y$</code> 可以取 <code>$k$</code> 个值，例如不再是简单的分为两类而是多类的问题。这时我们就要考虑用多项式分布 (multinomial distribution) 了。</p>
+
+<p>因为对于 <code>$k$</code> 个可能的值，总是有 <code>$\sum_{i=1}^k\phi_i=1$</code> ，所以我们只取 <code>$k-1$</code> 个参数来建立模型。就有 <code>$p(y=k;\phi)=1-\sum_{i=1}^{k-1}\phi_i=\phi_k$</code>。</p>
+
+<p>并且我们定义 <code>$T(y)$</code> 是一个长度为 <code>$k-1$</code> 的向量，用 <code>$(T(y))_i$</code> 来表示 <code>$T(y)$</code> 中的第 <code>$i$</code> 个元素。那么这个向量里面的值怎么确定呢？我们先引入 <code>$1\{\cdot\}$</code> 这个表示法，<code>$1\{True\}=1, 1\{False\}=0$</code> 。</p>
+
+<p>现在可以方便的表示 <code>$T(y)$</code> 和 <code>$y$</code> 的关系：<code>$(T(y))_i=1\{y=i\}$</code> 。并且也得到 <code>$E[(T(y))_i]=P(y=i)=\phi_i$</code> 。</p>
+
+<p>接下来我们写成指数家族的形式（过程略）：</p>
+
+<p><code>$$p(y;\phi)=b(y)\exp{(\eta^TT(y)-a(\eta))}$$</code></p>
+
+<p>其中：</p>
+
+<p><code>$$\begin{eqnarray}
+\eta &amp;=&amp; 
+\begin{bmatrix}
+\log{(\phi_1/\phi_k)} \\
+\log{(\phi_2/\phi_k)} \\
+\vdots \\
+\log{(\phi_{k-1}/\phi_k)}
+\end{bmatrix} \\
+a(\eta) &amp;=&amp; -\log{(\phi_k)} \\
+b(y) &amp;=&amp; 1
+\end{eqnarray}$$</code></p>
+
+<p>从上面几个式子可以得到 <code>$\eta$</code> 与 <code>$\phi$</code> 之间的关系：<code>$\eta_i=\log{\frac{\phi_i}{\phi_k}}$</code> 。而通过这个关系我们就可以得到：</p>
+
+<p><code>$$\phi_i = \frac{e^{\eta_i}}{\sum_{j=1}^k e^{\eta_j}}$$</code></p>
+
+<p>而这个表示 <code>$\eta$</code> 到 <code>$\phi$</code> 映射关系的函数就叫做 <code>Softmax 函数</code> 。由之前的第3个假设我们定义 <code>$\eta_i=\theta_i^Tx$</code> ，所以我们的概率模型就可以有如下表示：</p>
+
+<p><code>$$\begin{eqnarray}
+p(y=i|x;\theta) &amp;=&amp; \phi_i \\
+&amp;=&amp; \frac{e^{\eta_i}}{\sum_{j=1}^k e^{\eta_j}} \\
+&amp;=&amp; \frac{e^{\theta_i^Tx}}{\sum_{j=1}^k e^{\theta_j^Tx}}
+\end{eqnarray}$$</code></p>
+
+<p>这个可以对 <code>$y$</code> 有 <code>$k$</code> 种情形进行分类的模型叫做 <code>Softmax 回归</code> ，是逻辑回归的一种展开形式。这个模型的假设函数如下：</p>
+
+<p><code>$$\begin{eqnarray}
+h_\theta(x) &amp;=&amp; E[T(y)|x;\theta] \\
+&amp;=&amp; \begin{bmatrix}\phi_1\\\phi_2\\\vdots\\\phi_{k-1}\end{bmatrix} \\
+&amp;=&amp; \begin{bmatrix}
+\frac{\exp{(\theta_1^T x)}}{\sum_{j=1}^k\exp{(\theta_j^T x)}} \\
+\frac{\exp{(\theta_2^T x)}}{\sum_{j=1}^k\exp{(\theta_j^T x)}} \\
+\vdots \\
+\frac{\exp{(\theta_{k-1}^T x)}}{\sum_{j=1}^k\exp{(\theta_j^T x)}}
+\end{bmatrix}
+\end{eqnarray}$$</code></p>
+
+<p>最后，我们再来看看如何求出 <code>$\theta$</code> 。假设我们的训练集里有 <code>$m$</code> 个样本，我们写出对数最大似然函数：</p>
+
+<p><code>$$\begin{eqnarray}
+l(\theta) &amp;=&amp; \sum_{i=1}^m\log{p(y^{(i)}|x^{(i)};\theta)} \\
+&amp;=&amp; \sum_{i=1}^m\log{\prod_{l=1}^k(\frac{e^{\theta_l^T x^{(i)}}}{\sum_{j=1}^ke^{\theta_j^T x^{(i)}}})^{1\{y^{(i)}=l\}}}
+\end{eqnarray}$$</code></p>
+
+<p>现在不论是用梯度上升法还是牛顿法都可以求解了。</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

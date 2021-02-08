@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Es5 on 韩飞的博客</title>
+    <link>https://knightf.coding.me/tags/es5/index.xml</link>
+    <description>Recent content in Es5 on 韩飞的博客</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <atom:link href="https://knightf.coding.me/tags/es5/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>回头看Promise</title>
+      <link>https://knightf.coding.me/post/promise-review/</link>
+      <pubDate>Thu, 13 Oct 2016 20:08:41 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/promise-review/</guid>
+      <description>
+
+&lt;p&gt;一个 Promise 对象，有三种状态：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;pending&lt;/code&gt;， 这是初始的状态&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;fulfilled&lt;/code&gt;，这是表示代码成功执行的状态&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;rejected&lt;/code&gt;，这是表示代码执行失败的状态&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;p&gt;Promise 简化处理的无非就是这几种状态转换的过程。帮助保证状态只能从 &lt;code&gt;pending&lt;/code&gt; 到 &lt;code&gt;fulfilled&lt;/code&gt; 并不再改变，或者从 &lt;code&gt;pending&lt;/code&gt; 到 &lt;code&gt;rejected&lt;/code&gt; 并不再改变。可见它帮助我们构建了一个严谨完善的状态机，这也就是使用它便利的地方。&lt;/p&gt;
+
+&lt;h2 id=&#34;准备工作&#34;&gt;准备工作&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;var PENDING = 0,
+    FULFILLED = 1,
+    REJECTED = 2;
+
+function Promise(fn) {
+  var state = PENDING,
+      value = null;
+
+  function fulfill(val) {
+    state = FULFILLED;
+    value = val;
+  }
+
+  function reject(reason) {
+    state = REJECTED;
+    value = reason;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;基础的内容写好了。三种可能出现的状态作为常量先定义好。 &lt;code&gt;state&lt;/code&gt; 用来存放当前 Promise 对象的状态是什么，一开始当然是 &lt;code&gt;pending&lt;/code&gt; 。 &lt;code&gt;value&lt;/code&gt; 用来存放成功或者失败产生的结果，但现在初始时什么都没有所以是 &lt;code&gt;null&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;然后我们新建了两个工具函数帮我们做状态的转换。 &lt;code&gt;fulfill&lt;/code&gt; 这个函数接受成功时返回的值，更改状态并且存起来。同理，&lt;code&gt;reject&lt;/code&gt; 函数接受失败的值并更改状态。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function doResolve(fn, onFulfill, onReject) {
+  var done = false;
+  try {
+    fn(function(val) {
+      if (done) return;
+      done = true;
+      onFulfill(val);
+    }, function(e) {
+      if (done) return;
+      done = true;
+      onReject(e);
+    });
+  } catch(e) {
+    if (done) return;
+    done = true;
+    onReject(e);
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;我们又新建了一个 &lt;code&gt;doResolve&lt;/code&gt; 工具函数。这个函数有三个形参。 &lt;code&gt;fn&lt;/code&gt; 是包含异步过程的函数， &lt;code&gt;onFulfill&lt;/code&gt; 是一个成功时执行的函数， &lt;code&gt;onReject&lt;/code&gt; 是一个失败时执行的函数。这个工具函数的逻辑就是整个 Promise 的核心思想的体现。&lt;/p&gt;
+
+&lt;p&gt;整个函数很简单。创建了一个布尔值 &lt;code&gt;done&lt;/code&gt; 用来表示异步过程有没有结束。用 try-catch 的结构包裹住 &lt;code&gt;fn&lt;/code&gt; 执行的过程。可以看到在每一个分支进行处理的代码中，都对 &lt;code&gt;done&lt;/code&gt; 做了判断，因为如果它已经结束了，我们根本就不用做任何事了。&lt;/p&gt;
+
+&lt;h2 id=&#34;按照基本法&#34;&gt;按照基本法&lt;/h2&gt;
+
+&lt;p&gt;新建 Promise 时，包含异步操作的函数是需要使用者提供的，所以在 &lt;code&gt;fn&lt;/code&gt; 中是可以 &lt;code&gt;resolve&lt;/code&gt; 任何东西的。但是显然我们不能接受 &lt;code&gt;resolve&lt;/code&gt; 另一个 Promise ，这是不符合规范的。当 &lt;code&gt;resolve&lt;/code&gt; 执行时，应该返回一个确定的值，而不是别的异步操作。想法也很直接，我们直接检查一下传递进来的值是不是一个 Promise 。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function getThen(val) {
+  var t = typeof val;
+  if (val &amp;amp;&amp;amp; (t == &#39;function&#39; || t == &#39;object&#39;)) {
+    var then = val.then;
+    if (typeof then == &#39;function&#39;) {
+      return then;
+    }
+  }
+  return null;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在函数 &lt;code&gt;getThen&lt;/code&gt; 中，我们检查了传进来的 &lt;code&gt;val&lt;/code&gt; 是不是有一个叫做 &lt;code&gt;then&lt;/code&gt; 的成员方法，如果有就返回这个方法，如果没有就返回空。&lt;/p&gt;
+
+&lt;p&gt;有了 &lt;code&gt;getThen&lt;/code&gt; 和 &lt;code&gt;doResolve&lt;/code&gt; 这两个方法，我们就可以写出一个包含完整的 resolve 流程的函数如下。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function Promise(fn) {
+  // ...
+
+  function resolve(result) {
+    try {
+      var then = getThen(result);
+      if (then) {
+        doResolve(then.bind(result), resolve, reject);
+      }
+      fulfill(result);
+    } catch(e) {
+      reject(e);
+    }
+  }
+
+  doResolve(fn, resolve, reject);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在这个 &lt;code&gt;resolve&lt;/code&gt; 函数中，我们先检查了结果有没有 &lt;code&gt;then&lt;/code&gt; 方法。如果有，我们就调用一次 &lt;code&gt;doResolve&lt;/code&gt; 方法，让这个 &lt;code&gt;then&lt;/code&gt; 方法执行。然后我们 fulfill 这个 Promise 。当然，中间如果发生错误我们就 reject 掉这个 Promise 。&lt;/p&gt;
+
+&lt;h2 id=&#34;完成之后&#34;&gt;完成之后&lt;/h2&gt;
+
+&lt;p&gt;写到这里还不算完，还没有实现最关键的 &lt;code&gt;then&lt;/code&gt; 方法。之所以 Promise 可以用 &lt;code&gt;then&lt;/code&gt; 方法串起来，无非就是每一次都返回一个新的 Promise 来实现。而使用 &lt;code&gt;then&lt;/code&gt; 可以保证顺序，也是基于 &lt;code&gt;done&lt;/code&gt; 方法。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function Promise(fn) {
+  // ...
+  
+  var state = PENDING,
+      value = null,
+      handlers = [];
+
+  function fulfill(val) {
+    state = FULFILLED;
+    value = val;
+    handlers.forEach(handle);
+    handlers = null;
+  }
+
+  function reject(reason) {
+    state = REJECTED;
+    value = reason;
+    handlers.forEach(handle);
+    handlers = null;
+  }
+
+  function handle(handler) {
+    if (state == PENDING) {
+      handlers.push(handler);
+    } else {
+      if (state == FULFILLED &amp;amp;&amp;amp; typeof handler.onFulfilled == &#39;function&#39;) {      
+        handler.onFullfilled(value);
+      }
+      if (state == REJECTED &amp;amp;&amp;amp; typeof handler.onRejected == &#39;function&#39;) {
+        handler.onRejected(value);
+      }
+    }
+  }
+
+  this.done = function(onFulfilled, onRejected) {
+    setTimeout(function() {
+      handle({
+        onFulfilled: onFulfilled,
+        onRejected: onRejected,
+      });
+    }, 0);
+  }
+
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;之所以能够保证使用 &lt;code&gt;done&lt;/code&gt; 方法时，里面的代码是异步操作结束后执行，用的就是广播的机制。新建了一个 &lt;code&gt;handlers&lt;/code&gt; 数组，用来存放所有通过 &lt;code&gt;done&lt;/code&gt; 方法注册的 handler 。在 &lt;code&gt;fulfill&lt;/code&gt; 和 &lt;code&gt;reject&lt;/code&gt; 方法中，也做了对应的修改，使其调用这些 handler 。工具函数 &lt;code&gt;handle&lt;/code&gt; 可以根据 Promise 的状态来注册 handler 或者调用它们。 &lt;code&gt;done&lt;/code&gt; 方法则极端简单，用 &lt;code&gt;setTimeout&lt;/code&gt; 把 handler 的注册放在时间片队列的末尾，保证异步。&lt;/p&gt;
+
+&lt;h2 id=&#34;一篑之功&#34;&gt;一篑之功&lt;/h2&gt;
+
+&lt;p&gt;有了 &lt;code&gt;done&lt;/code&gt; 这个关键的方法， &lt;code&gt;then&lt;/code&gt; 方法也就不那么难写了。我们只要让 &lt;code&gt;then&lt;/code&gt; 方法接收两个函数分别对应成功与失败两个状态，并且返回一个新的 Promise 。而在这个 Promise 中，我们只要把这两个函数分别对应绑定到老的 Promise 的 &lt;code&gt;done&lt;/code&gt; 方法里就行了。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function Promise(fn) {
+  // ...
+
+  this.then = function(onFulfilled, onRejected) {
+    var self = this;  // cache this;
+    return new Promise(function(resolve, reject) {
+      return self.done(function(result){
+        if (typeof onFulfilled == &#39;function&#39;) {
+          try {
+            return resolve(onFulfilled(result));
+          } catch(e) {
+            return reject(e);
+          }
+        } else {
+          return resolve(result);
+        }
+      }, function(ex) {
+        if (typeof onRejected == &#39;function&#39;) {
+          try {
+            return resolve(onRejected(result));
+          } catch(e) {
+            return reject(e);
+          }
+        } else {
+          return reject(ex);
+        }
+      });
+    });
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;就像之前描述的一样，我们构造了一个 Promise ，让它接收 &lt;code&gt;onFulfilled&lt;/code&gt; 和 &lt;code&gt;onRejected&lt;/code&gt; 函数处理过的结果来 resolve 或者 reject 。&lt;/p&gt;
+
+&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;doResolve&lt;/code&gt; 是异步操作运行的核心。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;done&lt;/code&gt; 的实现是广播。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;then&lt;/code&gt; 构建了指定形式的新 Promise 来完成链式结构。&lt;/li&gt;
+&lt;/ol&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

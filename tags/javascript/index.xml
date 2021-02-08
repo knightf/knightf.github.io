@@ -1,0 +1,820 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Javascript on 韩飞的博客</title>
+    <link>https://knightf.coding.me/tags/javascript/index.xml</link>
+    <description>Recent content in Javascript on 韩飞的博客</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <atom:link href="https://knightf.coding.me/tags/javascript/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>回头看Promise</title>
+      <link>https://knightf.coding.me/post/promise-review/</link>
+      <pubDate>Thu, 13 Oct 2016 20:08:41 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/promise-review/</guid>
+      <description>
+
+&lt;p&gt;一个 Promise 对象，有三种状态：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;pending&lt;/code&gt;， 这是初始的状态&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;fulfilled&lt;/code&gt;，这是表示代码成功执行的状态&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;rejected&lt;/code&gt;，这是表示代码执行失败的状态&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;p&gt;Promise 简化处理的无非就是这几种状态转换的过程。帮助保证状态只能从 &lt;code&gt;pending&lt;/code&gt; 到 &lt;code&gt;fulfilled&lt;/code&gt; 并不再改变，或者从 &lt;code&gt;pending&lt;/code&gt; 到 &lt;code&gt;rejected&lt;/code&gt; 并不再改变。可见它帮助我们构建了一个严谨完善的状态机，这也就是使用它便利的地方。&lt;/p&gt;
+
+&lt;h2 id=&#34;准备工作&#34;&gt;准备工作&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;var PENDING = 0,
+    FULFILLED = 1,
+    REJECTED = 2;
+
+function Promise(fn) {
+  var state = PENDING,
+      value = null;
+
+  function fulfill(val) {
+    state = FULFILLED;
+    value = val;
+  }
+
+  function reject(reason) {
+    state = REJECTED;
+    value = reason;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;基础的内容写好了。三种可能出现的状态作为常量先定义好。 &lt;code&gt;state&lt;/code&gt; 用来存放当前 Promise 对象的状态是什么，一开始当然是 &lt;code&gt;pending&lt;/code&gt; 。 &lt;code&gt;value&lt;/code&gt; 用来存放成功或者失败产生的结果，但现在初始时什么都没有所以是 &lt;code&gt;null&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;然后我们新建了两个工具函数帮我们做状态的转换。 &lt;code&gt;fulfill&lt;/code&gt; 这个函数接受成功时返回的值，更改状态并且存起来。同理，&lt;code&gt;reject&lt;/code&gt; 函数接受失败的值并更改状态。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function doResolve(fn, onFulfill, onReject) {
+  var done = false;
+  try {
+    fn(function(val) {
+      if (done) return;
+      done = true;
+      onFulfill(val);
+    }, function(e) {
+      if (done) return;
+      done = true;
+      onReject(e);
+    });
+  } catch(e) {
+    if (done) return;
+    done = true;
+    onReject(e);
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;我们又新建了一个 &lt;code&gt;doResolve&lt;/code&gt; 工具函数。这个函数有三个形参。 &lt;code&gt;fn&lt;/code&gt; 是包含异步过程的函数， &lt;code&gt;onFulfill&lt;/code&gt; 是一个成功时执行的函数， &lt;code&gt;onReject&lt;/code&gt; 是一个失败时执行的函数。这个工具函数的逻辑就是整个 Promise 的核心思想的体现。&lt;/p&gt;
+
+&lt;p&gt;整个函数很简单。创建了一个布尔值 &lt;code&gt;done&lt;/code&gt; 用来表示异步过程有没有结束。用 try-catch 的结构包裹住 &lt;code&gt;fn&lt;/code&gt; 执行的过程。可以看到在每一个分支进行处理的代码中，都对 &lt;code&gt;done&lt;/code&gt; 做了判断，因为如果它已经结束了，我们根本就不用做任何事了。&lt;/p&gt;
+
+&lt;h2 id=&#34;按照基本法&#34;&gt;按照基本法&lt;/h2&gt;
+
+&lt;p&gt;新建 Promise 时，包含异步操作的函数是需要使用者提供的，所以在 &lt;code&gt;fn&lt;/code&gt; 中是可以 &lt;code&gt;resolve&lt;/code&gt; 任何东西的。但是显然我们不能接受 &lt;code&gt;resolve&lt;/code&gt; 另一个 Promise ，这是不符合规范的。当 &lt;code&gt;resolve&lt;/code&gt; 执行时，应该返回一个确定的值，而不是别的异步操作。想法也很直接，我们直接检查一下传递进来的值是不是一个 Promise 。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function getThen(val) {
+  var t = typeof val;
+  if (val &amp;amp;&amp;amp; (t == &#39;function&#39; || t == &#39;object&#39;)) {
+    var then = val.then;
+    if (typeof then == &#39;function&#39;) {
+      return then;
+    }
+  }
+  return null;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在函数 &lt;code&gt;getThen&lt;/code&gt; 中，我们检查了传进来的 &lt;code&gt;val&lt;/code&gt; 是不是有一个叫做 &lt;code&gt;then&lt;/code&gt; 的成员方法，如果有就返回这个方法，如果没有就返回空。&lt;/p&gt;
+
+&lt;p&gt;有了 &lt;code&gt;getThen&lt;/code&gt; 和 &lt;code&gt;doResolve&lt;/code&gt; 这两个方法，我们就可以写出一个包含完整的 resolve 流程的函数如下。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function Promise(fn) {
+  // ...
+
+  function resolve(result) {
+    try {
+      var then = getThen(result);
+      if (then) {
+        doResolve(then.bind(result), resolve, reject);
+      }
+      fulfill(result);
+    } catch(e) {
+      reject(e);
+    }
+  }
+
+  doResolve(fn, resolve, reject);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在这个 &lt;code&gt;resolve&lt;/code&gt; 函数中，我们先检查了结果有没有 &lt;code&gt;then&lt;/code&gt; 方法。如果有，我们就调用一次 &lt;code&gt;doResolve&lt;/code&gt; 方法，让这个 &lt;code&gt;then&lt;/code&gt; 方法执行。然后我们 fulfill 这个 Promise 。当然，中间如果发生错误我们就 reject 掉这个 Promise 。&lt;/p&gt;
+
+&lt;h2 id=&#34;完成之后&#34;&gt;完成之后&lt;/h2&gt;
+
+&lt;p&gt;写到这里还不算完，还没有实现最关键的 &lt;code&gt;then&lt;/code&gt; 方法。之所以 Promise 可以用 &lt;code&gt;then&lt;/code&gt; 方法串起来，无非就是每一次都返回一个新的 Promise 来实现。而使用 &lt;code&gt;then&lt;/code&gt; 可以保证顺序，也是基于 &lt;code&gt;done&lt;/code&gt; 方法。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function Promise(fn) {
+  // ...
+  
+  var state = PENDING,
+      value = null,
+      handlers = [];
+
+  function fulfill(val) {
+    state = FULFILLED;
+    value = val;
+    handlers.forEach(handle);
+    handlers = null;
+  }
+
+  function reject(reason) {
+    state = REJECTED;
+    value = reason;
+    handlers.forEach(handle);
+    handlers = null;
+  }
+
+  function handle(handler) {
+    if (state == PENDING) {
+      handlers.push(handler);
+    } else {
+      if (state == FULFILLED &amp;amp;&amp;amp; typeof handler.onFulfilled == &#39;function&#39;) {      
+        handler.onFullfilled(value);
+      }
+      if (state == REJECTED &amp;amp;&amp;amp; typeof handler.onRejected == &#39;function&#39;) {
+        handler.onRejected(value);
+      }
+    }
+  }
+
+  this.done = function(onFulfilled, onRejected) {
+    setTimeout(function() {
+      handle({
+        onFulfilled: onFulfilled,
+        onRejected: onRejected,
+      });
+    }, 0);
+  }
+
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;之所以能够保证使用 &lt;code&gt;done&lt;/code&gt; 方法时，里面的代码是异步操作结束后执行，用的就是广播的机制。新建了一个 &lt;code&gt;handlers&lt;/code&gt; 数组，用来存放所有通过 &lt;code&gt;done&lt;/code&gt; 方法注册的 handler 。在 &lt;code&gt;fulfill&lt;/code&gt; 和 &lt;code&gt;reject&lt;/code&gt; 方法中，也做了对应的修改，使其调用这些 handler 。工具函数 &lt;code&gt;handle&lt;/code&gt; 可以根据 Promise 的状态来注册 handler 或者调用它们。 &lt;code&gt;done&lt;/code&gt; 方法则极端简单，用 &lt;code&gt;setTimeout&lt;/code&gt; 把 handler 的注册放在时间片队列的末尾，保证异步。&lt;/p&gt;
+
+&lt;h2 id=&#34;一篑之功&#34;&gt;一篑之功&lt;/h2&gt;
+
+&lt;p&gt;有了 &lt;code&gt;done&lt;/code&gt; 这个关键的方法， &lt;code&gt;then&lt;/code&gt; 方法也就不那么难写了。我们只要让 &lt;code&gt;then&lt;/code&gt; 方法接收两个函数分别对应成功与失败两个状态，并且返回一个新的 Promise 。而在这个 Promise 中，我们只要把这两个函数分别对应绑定到老的 Promise 的 &lt;code&gt;done&lt;/code&gt; 方法里就行了。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function Promise(fn) {
+  // ...
+
+  this.then = function(onFulfilled, onRejected) {
+    var self = this;  // cache this;
+    return new Promise(function(resolve, reject) {
+      return self.done(function(result){
+        if (typeof onFulfilled == &#39;function&#39;) {
+          try {
+            return resolve(onFulfilled(result));
+          } catch(e) {
+            return reject(e);
+          }
+        } else {
+          return resolve(result);
+        }
+      }, function(ex) {
+        if (typeof onRejected == &#39;function&#39;) {
+          try {
+            return resolve(onRejected(result));
+          } catch(e) {
+            return reject(e);
+          }
+        } else {
+          return reject(ex);
+        }
+      });
+    });
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;就像之前描述的一样，我们构造了一个 Promise ，让它接收 &lt;code&gt;onFulfilled&lt;/code&gt; 和 &lt;code&gt;onRejected&lt;/code&gt; 函数处理过的结果来 resolve 或者 reject 。&lt;/p&gt;
+
+&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;doResolve&lt;/code&gt; 是异步操作运行的核心。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;done&lt;/code&gt; 的实现是广播。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;then&lt;/code&gt; 构建了指定形式的新 Promise 来完成链式结构。&lt;/li&gt;
+&lt;/ol&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Karma入门－JavaScript单元测试</title>
+      <link>https://knightf.coding.me/post/karma-tutorial/</link>
+      <pubDate>Fri, 29 Jul 2016 11:26:01 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/karma-tutorial/</guid>
+      <description>
+
+&lt;p&gt;&lt;a href=&#34;http://www.bradoncode.com/blog/2015/02/27/karma-tutorial/&#34;&gt;阅读原文&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;什么是-karma&#34;&gt;什么是 Karma ?&lt;/h2&gt;
+
+&lt;p&gt;Karma 是一个可以通过命令行在真正的浏览器上运行源代码的工具。它之所以强大，是因为它可以在真的浏览器中运行代码，而不是在虚拟的 DOM 中运行。DOM 在不同浏览器上的实现都不一样，所以能用真的浏览器可以保证测试是有效的。&lt;/p&gt;
+
+&lt;p&gt;你可以从&lt;a href=&#34;http://karma-runner.github.io/0.12/index.html&#34;&gt; Karma 官网&lt;/a&gt;上找到更多的细节和文档。我发现安装完成之后还是需要有基础知识才能使用的。我曾经从头到位地使用过所以在这里总结一下。&lt;/p&gt;
+
+&lt;p&gt;这篇文章记述了安装过程，介绍了怎么配置初始化和我给出的一些自定义安装内容。在 Github 上有这个 &lt;a href=&#34;https://github.com/bbraithwaite/karma-seed&#34;&gt;karma-seed&lt;/a&gt; 项目。&lt;/p&gt;
+
+&lt;h2 id=&#34;安装&#34;&gt;安装&lt;/h2&gt;
+
+&lt;p&gt;需要安装 &lt;a href=&#34;http://nodejs.org/&#34;&gt;Node.js&lt;/a&gt; ，因为 Karma 在上面运行。&lt;/p&gt;
+
+&lt;p&gt;想要更细致地安装 Karma ，可以看这个&lt;a href=&#34;http://karma-runner.github.io/0.12/intro/installation.html&#34;&gt;官方的文档&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;不想费劲的话，可以下直接下载 &lt;code&gt;package.json&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;curl -O https://gist.githubusercontent.com/bbraithwaite/7432f64ea45e028eb23c/raw/2a6e23cee09e7737c30cc790393a9b273070fbcb/package.json
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;或者直接把下面的内容粘贴进 &lt;code&gt;package.json&lt;/code&gt; 里面：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+  &amp;quot;name&amp;quot;: &amp;quot;karma-seed&amp;quot;,
+  &amp;quot;version&amp;quot;: &amp;quot;1.0.0&amp;quot;,
+  &amp;quot;description&amp;quot;: &amp;quot;&amp;quot;,
+  &amp;quot;scripts&amp;quot;: {
+    &amp;quot;test&amp;quot;: &amp;quot;./node_modules/karma/bin/karma start karma.conf.js&amp;quot;
+  },
+  &amp;quot;devDependencies&amp;quot;: {
+    &amp;quot;jasmine-core&amp;quot;: &amp;quot;^2.2.0&amp;quot;,
+    &amp;quot;karma&amp;quot;: &amp;quot;^0.12.31&amp;quot;,
+    &amp;quot;karma-chrome-launcher&amp;quot;: &amp;quot;^0.1.7&amp;quot;,
+    &amp;quot;karma-jasmine&amp;quot;: &amp;quot;^0.3.5&amp;quot;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;然后执行：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;完成之后，输入下面的命令检查一下结果：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;./node_modules/karma/bin/karma start
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果都没问题的话，控制台应该输出下面这样的东西：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;INFO [karma]: Karma v0.12.31 server started at http://localhost:9876/
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;配置&#34;&gt;配置&lt;/h2&gt;
+
+&lt;p&gt;接下来需要给 Karma 添加一些配置。为了规范化这个过程，运行下面的命令并且一直接受默认值：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;./node_modules/karma/bin/karma init
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在项目根目录会创建一个叫 &lt;code&gt;karma.conf.js&lt;/code&gt; 的文件。如果你想要了解这些属性，可以看一下&lt;a href=&#34;http://karma-runner.github.io/0.12/config/configuration-file.html&#34;&gt;配置文档&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;想要让测试可以通过 &lt;code&gt;npm test&lt;/code&gt; 这样的命令执行，需要改一下 &lt;code&gt;package.json&lt;/code&gt; 文件。把 &lt;code&gt;package.json&lt;/code&gt; 里面的：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;scripts&amp;quot;: {
+  &amp;quot;test&amp;quot;: &amp;quot;echo \&amp;quot;Error: no test specified\&amp;quot; &amp;amp;&amp;amp; exit 1&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;换成：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;scripts&amp;quot;: {
+  &amp;quot;test&amp;quot;: &amp;quot;./node_modules/karma/bin/karma start karma.conf.js&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;使用 &lt;code&gt;npm test&lt;/code&gt; 来作为测试的入口是我个人的偏好。这样不管我用什么样的工具做测试，我都可以用同样的命令执行。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Karma 文档里提到还可以安装 &lt;code&gt;karma-cli&lt;/code&gt; 来省去 &lt;code&gt;./node_modules/karma/bin/karma start&lt;/code&gt; 这样的麻烦。如果你想装的话：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install -g karma-cli
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果 &lt;code&gt;karma-cli&lt;/code&gt; 装好了，那么 &lt;code&gt;package.json&lt;/code&gt; 里面的内容就要更新一下：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;scripts&amp;quot;: {
+  &amp;quot;test&amp;quot;: &amp;quot;karma start karma.conf.js&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;添加测试&#34;&gt;添加测试&lt;/h2&gt;
+
+&lt;p&gt;我看到的大多数例子都是默认在用 AngularJS 。考虑到我们是纯净安装所以就不用这些框架出场了。作为一个简单的例子我们要测试一个应用，它在单击按钮的时候把两个数加起来并显示出来。HTML 是这样的：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;&amp;lt;html&amp;gt;
+  &amp;lt;head&amp;gt;
+    &amp;lt;title&amp;gt;Magic Calculator&amp;lt;/title&amp;gt;
+  &amp;lt;/head&amp;gt;
+  &amp;lt;body&amp;gt;
+    &amp;lt;input id=&amp;quot;x&amp;quot; type=&amp;quot;text&amp;quot;&amp;gt;
+    &amp;lt;input id=&amp;quot;y&amp;quot; type=&amp;quot;text&amp;quot;&amp;gt;
+    &amp;lt;input id=&amp;quot;add&amp;quot; type=&amp;quot;button&amp;quot; value=&amp;quot;Add Numbers&amp;quot;&amp;gt;
+    Result: &amp;lt;span id=&amp;quot;result&amp;quot; /&amp;gt;
+    &amp;lt;script type=&amp;quot;text/javascript&amp;quot; src=&amp;quot;lib/calculator.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;
+    &amp;lt;script&amp;gt;
+      calculator.init();
+    &amp;lt;/script&amp;gt;
+  &amp;lt;/body&amp;gt;
+&amp;lt;/html&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;创建两个新文件：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;lib/calculator.js&lt;/li&gt;
+&lt;li&gt;test/calculator.test.js&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;然后先把这些粘贴进 &lt;code&gt;test/calculator.test.js&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;describe(&#39;Calculator&#39;, function() {
+
+  it(&#39;should add numbers&#39;);
+
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在执行 &lt;code&gt;npm test&lt;/code&gt; 的话是不会检测到这个新的测试的。我们需要修改配置文件让 Karma 知道这些新的文件的存在。更新 &lt;code&gt;karma.conf.js&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  // list of files / patterns to load in the browser
+  files: [
+    &#39;lib/*.js&#39;,
+    &#39;test/*.js&#39;
+  ],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在再执行 &lt;code&gt;npm test&lt;/code&gt; 的话控制台就会输出类似下面的东西了：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;INFO [karma]: Karma v0.12.31 server started at http://localhost:9876/
+INFO [launcher]: Starting browser Chrome
+INFO [Chrome 40.0.2214 (Mac OS X 10.10.2)]: Connected on socket bDMxeU51miCD4wNe3 with id 34236680
+Chrome 40.0.2214 (Mac OS X 10.10.2): Executed 0 of 1 (skipped 1) ERROR (0.004 secs / 0 secs)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;使用 Chrome 这样的浏览器执行测试还有一个好处就是访问输出的 URL 的时候，浏览器自带了调试的功能。下面我们就给测试文件添加一些有意义的内容：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;/*
+ * Unit tests for lib/calculator.js
+ */
+
+describe(&#39;Calculator&#39;, function() {
+
+  // inject the HTML fixture for the tests
+  beforeEach(function() {
+    var fixture = &#39;&amp;lt;div id=&amp;quot;fixture&amp;quot;&amp;gt;&amp;lt;input id=&amp;quot;x&amp;quot; type=&amp;quot;text&amp;quot;&amp;gt;&#39; + 
+      &#39;&amp;lt;input id=&amp;quot;y&amp;quot; type=&amp;quot;text&amp;quot;&amp;gt;&#39; + 
+      &#39;&amp;lt;input id=&amp;quot;add&amp;quot; type=&amp;quot;button&amp;quot; value=&amp;quot;Add Numbers&amp;quot;&amp;gt;&#39; +
+      &#39;Result: &amp;lt;span id=&amp;quot;result&amp;quot; /&amp;gt;&amp;lt;/div&amp;gt;&#39;;
+
+    document.body.insertAdjacentHTML(
+      &#39;afterbegin&#39;, 
+      fixture);
+  });
+
+  // remove the html fixture from the DOM
+  afterEach(function() {
+    document.body.removeChild(document.getElementById(&#39;fixture&#39;));
+  });
+
+  // call the init function of calculator to register DOM elements
+  beforeEach(function() {
+    window.calculator.init();
+  });
+
+  it(&#39;should return 3 for 1 + 2&#39;, function() {
+    document.getElementById(&#39;x&#39;).value = 1;
+    document.getElementById(&#39;y&#39;).value = 2;
+    document.getElementById(&#39;add&#39;).click();
+    expect(document.getElementById(&#39;result&#39;).innerHTML).toBe(&#39;3&#39;);
+  });
+
+  it(&#39;should calculate zero for invalid x value&#39;, function() {
+    document.getElementById(&#39;x&#39;).value = &#39;hello&#39;;
+    document.getElementById(&#39;y&#39;).value = 2;
+    document.getElementById(&#39;add&#39;).click();
+    expect(document.getElementById(&#39;result&#39;).innerHTML).toBe(&#39;0&#39;);
+  });
+
+  it(&#39;should calculate zero for invalid y value&#39;, function() {
+    document.getElementById(&#39;x&#39;).value = 1;
+    document.getElementById(&#39;y&#39;).value = &#39;goodbye&#39;;
+    document.getElementById(&#39;add&#39;).click();
+    expect(document.getElementById(&#39;result&#39;).innerHTML).toBe(&#39;0&#39;);
+  });
+
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这个文件里的重点：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;测试文件用到的 HTML 是在浏览器里注入的。&lt;/li&gt;
+&lt;li&gt;DOM 元素可以通过和浏览器一样的方式访问到。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;接下来加上基础的计算逻辑，把下面的内容粘贴进 &lt;code&gt;lib/calculator.js&lt;/code&gt; 里面：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;window.calculator = window.calculator || {};
+
+(function() {
+  var calculate = function() {
+    var x = document.getElementById(&#39;x&#39;).value;
+    var y = document.getElementById(&#39;y&#39;).value;
+    document.getElementById(&#39;result&#39;).innerHTML = x + y;
+  };
+
+  window.calculator.init = function() {
+    document.getElementById(&#39;add&#39;).addEventListener(&#39;click&#39;, calculate);
+  };
+})();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;我在里面留了一些 bug 好让测试失败。现在运行 &lt;code&gt;npm test&lt;/code&gt; 就会出现测试未通过的信息。Karma 具有监听的功能，如果这些文件被改动后不需要再次运行 &lt;code&gt;npm test&lt;/code&gt; ，它会自动重启测试。&lt;/p&gt;
+
+&lt;p&gt;那现在把 bug 去掉，&lt;code&gt;calculator.js&lt;/code&gt; 应该长这样：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;&#39;use strict&#39;;
+
+window.calculator = window.calculator || {};
+
+(function() {
+  var getIntById = function(id) {
+    return parseInt(document.getElementById(id).value, 10);
+  };
+
+  var calculate = function() {
+    var sum = getIntById(&#39;x&#39;) + getIntById(&#39;y&#39;);
+    document.getElementById(&#39;result&#39;).innerHTML = isNaN(sum) ? 0 : sum;
+  };
+
+  window.calculator.init = function() {
+    document.getElementById(&#39;add&#39;).addEventListener(&#39;click&#39;, calculate);
+  };
+})();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在测试就应该通过了：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;INFO [karma]: Karma v0.12.31 server started at http://localhost:9876/
+INFO [launcher]: Starting browser PhantomJS
+INFO [PhantomJS 1.9.8 (Mac OS X)]: Connected on socket WE5_e1Pp_f3CI1Zmm4tw with id 82088536
+PhantomJS 1.9.8 (Mac OS X): Executed 3 of 3 SUCCESS (0.016 secs / 0.001 secs)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;可选配置&#34;&gt;可选配置&lt;/h2&gt;
+
+&lt;p&gt;以前我做的项目里曾经做过这些配置：&lt;/p&gt;
+
+&lt;h3 id=&#34;使用-mocha-和-should&#34;&gt;使用 Mocha 和 Should&lt;/h3&gt;
+
+&lt;p&gt;如果你之前写过 Node.js 的单元测试你很可能会用到 Mocha。我偏好用 Mocha 和 Should 风格的断言。刚才默认的安装我们用了 Jasmine，但是如果你想用 Mocha 的话改起来非常容易。&lt;/p&gt;
+
+&lt;p&gt;安装，并且把 Jasmine 从 &lt;code&gt;package.json&lt;/code&gt; 里面删掉：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install karma-mocha --save-dev
+npm install karma-chai --save-dev
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;更新 &lt;code&gt;karma.conf.js&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  frameworks: [&#39;mocha&#39;, &#39;chai&#39;],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在我们就能用这种格式写断言了：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;1.should.equal(2);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;使用无头浏览器&#34;&gt;使用无头浏览器&lt;/h3&gt;
+
+&lt;p&gt;如果测试多了，再用多种浏览器测试会变的很慢。我有的时候并不需要把代码在每种浏览器里都测一遍，所以为了速度我会用无头浏览器 &lt;a href=&#34;http://www.bradoncode.com/blog/2015/02/27/karma-tutorial/phantomjs.org&#34;&gt;PhantomJS&lt;/a&gt;。然后等到最后代码成型的时候再在每种浏览器里测试。&lt;/p&gt;
+
+&lt;p&gt;安装 PhantomJS 的话：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install karma-phantomjs-launcher --save-dev
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;那么在 &lt;code&gt;karma.conf.js&lt;/code&gt; 里面就要这样改：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  browsers: [&#39;PhantomJS&#39;],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;设置测试覆盖范围&#34;&gt;设置测试覆盖范围&lt;/h3&gt;
+
+&lt;p&gt;有时我会需要测试覆盖范围的报告。这可以用 &lt;a href=&#34;http://gotwarlost.github.io/istanbul/&#34;&gt;Istanbul&lt;/a&gt; 来实现。&lt;/p&gt;
+
+&lt;p&gt;启用覆盖范围报告，安装：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install karma-coverage --save-dev
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在 &lt;code&gt;karma.conf.js&lt;/code&gt; 里面，设置这些属性：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  preprocessors: {
+    &#39;lib/*.js&#39;: &#39;coverage&#39;
+  },
+  reporters: [&#39;progress&#39;, &#39;coverage&#39;],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;当运行测试的时候，会创建一个新的 &lt;code&gt;coverage&lt;/code&gt; 文件夹。打开里面的 &lt;code&gt;index.html&lt;/code&gt; 就可以看到报告。&lt;/p&gt;
+
+&lt;h3 id=&#34;设置测试配置文件&#34;&gt;设置测试配置文件&lt;/h3&gt;
+
+&lt;p&gt;我工作时总是希望能够简单的在不同的测试目标中切换。当做小的改动的时候我希望用 PhantomJS 快速的测试而且不需要覆盖范围之类的东西。但当我完成一个功能的时候希望能够全面的测试。&lt;/p&gt;
+
+&lt;p&gt;我通过设置环境变量实现这样的切换，在 &lt;code&gt;package.json&lt;/code&gt; 中：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;scripts&amp;quot;: {
+  &amp;quot;test&amp;quot;: &amp;quot;karma start karma.conf.js&amp;quot;,
+  &amp;quot;full-test&amp;quot;: &amp;quot;NODE_ENV=test karma start karma.conf.js&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果我执行 &lt;code&gt;npm run full-test&lt;/code&gt; 就是全面的跨浏览器测试，包括覆盖范围报告。&lt;/p&gt;
+
+&lt;h3 id=&#34;处理-html-片段&#34;&gt;处理 HTML 片段&lt;/h3&gt;
+
+&lt;p&gt;在上面的内容里 HTML 代码是通过 JavaScript 注入进去的。当测试变多的时候，插入这些代码就变得累人了。有很多插件可以解决这个问题，我用的是 &lt;a href=&#34;https://github.com/billtrik/karma-fixture&#34;&gt;karma-fixture&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;把 HTML 片段存进文件里然后在测试里就可以这样引用：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt; beforeEach(function() {
+    fixture.load(&#39;calculator.fixture.html&#39;);
+ });
+ ~~~
+
+See an [example test here](https://github.com/bbraithwaite/karma-seed/blob/master/test/calculator.test.js).
+
+### Keep DOM accessor code out of Tests
+
+This is a personal preference concerning style. The test example given previously had code to find elements in the test method e.g. _document.getElementById_. This additional detail can muddy the tests making them less readable.
+
+~~~javascript
+it(&#39;should return 3 for 1 + 2&#39;, function() {
+  document.getElementById(&#39;x&#39;).value = 1;
+  document.getElementById(&#39;y&#39;).value = 2;
+  document.getElementById(&#39;add&#39;).click();
+  expect(document.getElementById(&#39;result&#39;).innerHTML).toBe(&#39;3&#39;);
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;seed-项目&#34;&gt;Seed 项目&lt;/h2&gt;
+
+&lt;p&gt;包含上面所有内容的项目在这里：&lt;a href=&#34;https://github.com/bbraithwaite/karma-seed&#34;&gt;https://github.com/bbraithwaite/karma-seed&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>一个连接React和Redux的注意事项</title>
+      <link>https://knightf.coding.me/post/react-redux-shallowe-qual/</link>
+      <pubDate>Tue, 21 Jun 2016 11:43:06 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/react-redux-shallowe-qual/</guid>
+      <description>&lt;p&gt;用 &lt;code&gt;react-redux&lt;/code&gt; 连接 &lt;code&gt;React&lt;/code&gt; 和 &lt;code&gt;Redux&lt;/code&gt; 的时候，需要 &lt;code&gt;mapStateToProps&lt;/code&gt; 这个函数来把 &lt;code&gt;store&lt;/code&gt; 里面的内容映射到组建的 &lt;code&gt;props&lt;/code&gt; 里面。这个 &lt;code&gt;mapStateToProps&lt;/code&gt; 函数并不会总是把值赋给组件，它会执行一个 &lt;a href=&#34;https://github.com/reactjs/react-redux/blob/master/src/utils/shallowEqual.js&#34;&gt;&lt;code&gt;shallowEqual&lt;/code&gt;&lt;/a&gt; 函数，而这个函数就像它的名字一样忠诚的履行着“浅浅”的比较。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;export default function shallowEqual(objA, objB) {
+  if (objA === objB) {
+    return true
+  }
+
+  const keysA = Object.keys(objA)
+  const keysB = Object.keys(objB)
+
+  if (keysA.length !== keysB.length) {
+    return false
+  }
+
+  // Test for A&#39;s keys different from B.
+  const hasOwn = Object.prototype.hasOwnProperty
+  for (let i = 0; i &amp;lt; keysA.length; i++) {
+    if (!hasOwn.call(objB, keysA[i]) ||
+        objA[keysA[i]] !== objB[keysA[i]]) {
+      return false
+    }
+  }
+
+  return true
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;code&gt;a&lt;/code&gt; 和 &lt;code&gt;b&lt;/code&gt; 的引用一样，返回 &lt;code&gt;true&lt;/code&gt; 。&lt;code&gt;a&lt;/code&gt; 和 &lt;code&gt;b&lt;/code&gt; 的所有键的列表长度不一样，返回 &lt;code&gt;false&lt;/code&gt; 。&lt;code&gt;a&lt;/code&gt; 和 &lt;code&gt;b&lt;/code&gt; 所有值的引用一样，所有键也都是自己的属性，那么就返回 &lt;code&gt;true&lt;/code&gt; ，否则返回 &lt;code&gt;false&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;如果你在 &lt;code&gt;redux&lt;/code&gt; 里面的改动是在比较深的地方，那么很有可能 &lt;code&gt;react-redux&lt;/code&gt; 在帮你绑定的时候，就把这个改动给忽视了，因为它只做浅层的比较。&lt;/p&gt;
+
+&lt;p&gt;所以在写 &lt;code&gt;reducer&lt;/code&gt; 的时候，记得要改变引用的地址，让它可以成功更新属性，触发 &lt;code&gt;render&lt;/code&gt; 。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>JavaScript函数式开发概念：Curry代码</title>
+      <link>https://knightf.coding.me/post/functional-javascript-concepts-currying/</link>
+      <pubDate>Mon, 13 Jun 2016 18:39:15 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/functional-javascript-concepts-currying/</guid>
+      <description>
+
+&lt;p&gt;&lt;a href=&#34;https://blog.simpleblend.net/functional-javascript-concepts-currying/&#34;&gt;阅读原文&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;在我搞懂Curry代码之前，听到别的程序员说起它我总是很紧张。每次他们一讲这个就好像一块不详的雷雨云袭来，感觉这个概念很难懂。但我可以向你保证程序圈里的Curry，一点都不难懂，而且很简单就可以掌握，打开了通向强大的函数式编程大门。&lt;/p&gt;
+
+&lt;h1 id=&#34;核心概念&#34;&gt;核心概念&lt;/h1&gt;
+
+&lt;p&gt;我们先来看看&lt;a href=&#34;https://twitter.com/drboolean&#34;&gt;Brian Lonsdorf&lt;/a&gt;写的一本很棒的书：&lt;a href=&#34;https://drboolean.gitbooks.io/mostly-adequate-guide/content/&#34;&gt;Mostly Adequate Guide to Functional Programming&lt;/a&gt;里面是怎么说的：&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;概念很简单：你可以用比一个函数所需要的形参数量更少的形参来调用它。它会返回一个函数，接收剩下的形参。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;换言之，一个curry函数随着时间变化接收并提供额外的形参。它通过返回另一个函数来实现这个功能。为了看看这是怎么实现的，我们来把一个函数curry化。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;var add = function(x, y) {
+  return x + y;
+}
+
+add(10, 20); // 30
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在我们又一个叫 &lt;code&gt;sum&lt;/code&gt; 的函数可以把两个数字加起来。简单。我们curry一下它。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;var add = function(x) {
+  return function(y) {
+    return x + y;
+  }
+}
+
+var addFifty = add(50);
+
+addFifty(10); // 60
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;我们返回了一个变量 &lt;code&gt;x&lt;/code&gt; 的闭包函数，并没有直接返回结果。这样可以让我们在之后执行 &lt;code&gt;addFifty&lt;/code&gt; 的时候依然可以有对 &lt;code&gt;x&lt;/code&gt; 的引用。最后我们得到的这个函数给我们算了两个数字的和。我们可以说这个例子里面的函数就是curry化的了。&lt;/p&gt;
+
+&lt;h1 id=&#34;为什么curry化&#34;&gt;为什么Curry化？&lt;/h1&gt;
+
+&lt;p&gt;Curry函数在很多意义上都有帮助。从函数式编程的角度来看，它可以让你的程序用上更多的纯函数。我之后会写更多有关纯函数的文章但现在简单地说，纯函数会让你的程序更好的被你和你的同事看懂。&lt;/p&gt;
+
+&lt;p&gt;另一个原因可以用这个更贴切一点的例子说明。虽然两个数相加可以很好地解释概念，但是不能突出它在更大的应用中带来的好处。现在我们就来看看。&lt;/p&gt;
+
+&lt;p&gt;假设我们正在处理下面这个有关动物的列表：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;const animals = [
+  {
+    id: 1,
+    name: &amp;quot;Tails&amp;quot;,
+    type: &amp;quot;Cat&amp;quot;,
+    adoptable: false
+  },
+  {
+    id: 2,
+    name: &amp;quot;Soul&amp;quot;,
+    type: &amp;quot;Cat&amp;quot;,
+    adoptable: true
+  },
+  {
+    id: 3,
+    name: &amp;quot;Fred&amp;quot;,
+    type: &amp;quot;Dog&amp;quot;,
+    adoptable: true
+  },
+  {
+    id: 4,
+    name: &amp;quot;Fury&amp;quot;,
+    type: &amp;quot;Lion&amp;quot;,
+    adoptable: true
+  }
+];
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;我们需要一个方法来基于 &lt;code&gt;type&lt;/code&gt; 过滤掉不需要的动物。我们可以这么写：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;animals.filter(animal =&amp;gt;
+   animal.type === &amp;quot;Cat&amp;quot;;
+);
+
+/*
+[{
+   adoptable: false,
+   id: 1,
+   name: &amp;quot;Tails&amp;quot;,
+   type: &amp;quot;Cat&amp;quot;
+ },
+ {
+   adoptable: true,
+   id: 2,
+   name: &amp;quot;Soul&amp;quot;,
+   type: &amp;quot;Cat&amp;quot;
+ }];
+*/
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;看着不错，这样我们就把所有猫都找到了。但达到同样的目的可以有一种更好的写法。&lt;/p&gt;
+
+&lt;p&gt;上面代码中最大的劣势就是 &lt;code&gt;type&lt;/code&gt; 这个动物的属性被紧密的与 &lt;em&gt;过滤这个行为&lt;/em&gt; 绑定到了一起。这样降低了重用性，而且助长了我们最糟糕的敌人——状态——的气焰。&lt;/p&gt;
+
+&lt;p&gt;我们来看看能不能写得更好一点：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;const isAnimal = 
+   type =&amp;gt; 
+     animal =&amp;gt;
+       animal.type === type;
+
+animals.filter(isAnimal(&amp;quot;Cat&amp;quot;));
+ 
+/*
+ [{
+   adoptable: false,
+   id: 1,
+   name: &amp;quot;Tails&amp;quot;,
+   type: &amp;quot;Cat&amp;quot;
+ },
+ {
+   adoptable: true,
+   id: 2,
+   name: &amp;quot;Soul&amp;quot;,
+   type: &amp;quot;Cat&amp;quot;
+ }];
+ */
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;简洁多了。我们一步步看：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;isAnimal&lt;/code&gt; 接收一个形参，类型&lt;/li&gt;
+&lt;li&gt;然后 &lt;code&gt;isAnimal&lt;/code&gt; 返回一个新的函数&lt;/li&gt;
+&lt;li&gt;返回的函数用来做 &lt;code&gt;.filter()&lt;/code&gt; 函数的回调&lt;/li&gt;
+&lt;li&gt;闭包让我们返回的新函数可以访问 &lt;code&gt;type&lt;/code&gt; 变量，最后让我们可以执行比较语句&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;那么为什么它比上一个例子好呢？当应用越来越大的时候，就更难理解函数都是作什么的，他们从哪儿来。尽量多写纯函数可以杜绝对状态的追溯，而且让我们的整个应用能更好地分成单独的部分测试。&lt;/p&gt;
+
+&lt;h1 id=&#34;结论-资源&#34;&gt;结论&amp;amp;资源&lt;/h1&gt;
+
+&lt;p&gt;我希望这篇文章可以让你看到curry函数背后强大的原理。我个人认为他们非常有用，并且让我学习了更多的有关函数式编程的理念。&lt;/p&gt;
+
+&lt;p&gt;如果你想要阅读更多有关的内容，我建议你可以看看这些函数式库，像是&lt;a href=&#34;http://ramdajs.com/0.21.0/docs/#curry&#34;&gt;Ramda.js&lt;/a&gt;和&lt;a href=&#34;https://lodash.com/docs#curry&#34;&gt;lodash&lt;/a&gt;，这些库里有广义上的curry函数可以让我们得到激动人心的函数式功能。&lt;/p&gt;
+
+&lt;p&gt;最后，祝您身体健康！&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Generator的next方法</title>
+      <link>https://knightf.coding.me/post/generator-next/</link>
+      <pubDate>Wed, 01 Jun 2016 15:36:16 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/generator-next/</guid>
+      <description>&lt;p&gt;使用&lt;code&gt;function*&lt;/code&gt;声明的Generator函数，其实并不是立即执行的函数，它返回一个&lt;code&gt;Generator&lt;/code&gt;对象。这个对象主要的方法就是&lt;code&gt;next&lt;/code&gt;方法。使用&lt;code&gt;next&lt;/code&gt;方法就可以一步步的执行这个&lt;code&gt;Generator&lt;/code&gt;对象中的语句。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;function* gen() { 
+  yield 1;
+  yield 2;
+  yield 3;
+}
+
+var g = gen();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;上面的代码中&lt;code&gt;g&lt;/code&gt;就是一个&lt;code&gt;Generator&lt;/code&gt;对象，不断调用它的&lt;code&gt;next&lt;/code&gt;方法，就会依次输出1、2和3。调用&lt;code&gt;next&lt;/code&gt;方法，返回的是一个对象，这个对象有两个属性：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;done: 布尔值，表示这个&lt;code&gt;Generator&lt;/code&gt;对象是不是已经没有更多代码可以执行了。&lt;/li&gt;
+&lt;li&gt;value: 就是&lt;code&gt;yield&lt;/code&gt;关键字后面表达式执行的结果。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;同时，&lt;code&gt;next&lt;/code&gt;方法还有一个形参&lt;code&gt;value&lt;/code&gt;。如果在调用&lt;code&gt;next&lt;/code&gt;方法的时候给定了这个形参，那么在这一步的执行过程中，&lt;code&gt;yield&lt;/code&gt;后面表达式的值就会被替换成这个形参，所以一次&lt;code&gt;next&lt;/code&gt;方法执行的顺序可以归纳成：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;执行&lt;code&gt;yield&lt;/code&gt;关键字后面的表达式得到值&lt;code&gt;temp&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;如果&lt;code&gt;next&lt;/code&gt;方法传入了&lt;code&gt;value&lt;/code&gt;，&lt;code&gt;temp = value&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;包含&lt;code&gt;yield&lt;/code&gt;关键字的这一完整表达式，值为&lt;code&gt;temp&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;需要&lt;strong&gt;注意&lt;/strong&gt;的一点是，当执行Generator函数得到&lt;code&gt;Generator&lt;/code&gt;之后，这个对象中的第一段代码块并没有执行，一定要执行一次&lt;code&gt;next&lt;/code&gt;方法才会真正启动这个&lt;code&gt;Generator&lt;/code&gt;。&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,279 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>机器学习 第十二章 独立成分分析 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>机器学习 第十二章 独立成分分析</h1>
+                    <h2 class="headline">
+                    June 2, 2017 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/machine-learning">Machine Learning</a>
+                        
+                            <a href="https://knightf.coding.me/tags/stanford-cs229">Stanford CS229</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<p>考虑由 <code>$n$</code> 个独立信号源生成的数据 <code>$s\in\mathbb{R}^{n}$</code> ，观测到的 <code>$x$</code> 与这些信号有：</p>
+
+<p><code>$$x=As$$</code></p>
+
+<p>其中 <code>$A$</code> 是一个方阵叫做 <code>混合矩阵</code> (mixing matrix) 。经过一段时间的观测可以得到数据集 <code>$\{x^{(i)};i=1,\ldots,m\}$</code> 。问题在于对于某一个 <code>$x^{(i)}=As^{(i)}$</code> 可以还原出 <code>$s^{(i)}$</code> 。借用鸡尾酒问题中的设定， <code>$s^{(i)}$</code> 是一个长度为 <code>$n$</code> 的向量， <code>$s_{j}^{(i)}$</code> 代表说话者 <code>$j$</code> 在时间片 <code>$i$</code> 时发出声音的值。同样的 <code>$x^{(i)}$</code> 是一个长度为 <code>$n$</code> 的向量，<code>$x_{j}^{(i)}$</code> 代表麦克风 <code>$j$</code> 在时间片 <code>$i$</code> 时采集到声音的值。</p>
+
+<p>令 <code>$W=A^{-1}$</code> 作为 <code>解析矩阵</code> (unmixing matrix) 。目标是找到 <code>$W$</code> 还原信号， <code>$s^{(i)}=Wx^{(i)}$</code> 。为简便符号表示：</p>
+
+<p><code>$$W=\begin{bmatrix}
+w_{1}^{T} \\
+\vdots \\
+w_{n}^{T}
+\end{bmatrix}$$</code></p>
+
+<p>其中 <code>$w_{i}\in\mathbb{R}^{n}$</code> ，并且第 <code>$j$</code> 个音源可以通过计算 <code>$s_{j}^{(i)}=w_{j}^{T}x^{(i)}$</code> 得到。</p>
+
+<h2 id="无法明确的的混淆数据">无法明确的的混淆数据</h2>
+
+<p><code>$x^{(i)}$</code> 的顺序不能确定。由于只需要调换 <code>$A$</code> 矩阵中列向量的顺序，就能改变混合信号的顺序，所以信号源的绝对顺序是不能确定的。</p>
+
+<p><code>$w_{i}$</code> 的缩放不能确定。因为 <code>$A$</code> 矩阵可以求得相应其所放的值来抵消掉数值的不一致。</p>
+
+<p>并且数据源的分布不能是符合高斯分布的。由于高斯分布具有传递性，所以不论 <code>$A$</code> 中的值是多少，我们都可以观测到同样的值。得到这个结论的理由是多项高斯分布是可以任意旋转的。</p>
+
+<h2 id="概率密度分布和它的线性变换">概率密度分布和它的线性变换</h2>
+
+<p>抛开上面的题设，思考概率密度函数中发生线性变换时的情况。如果有实数随机变量 <code>$x=As$</code> ，其中 <code>$A$</code> 和 <code>$s$</code> 都是实数。同样取 <code>$W=A^{-1}$</code> ，那么就可以得到 <code>$s=Wx$</code> 。直接得到 <code>$p_{x}(x)=p_{s}(Wx)$</code> 这样的结论是不正确的。</p>
+
+<p>广义的说，他们之间的概率密度分布关系如下：</p>
+
+<p><code>$$p_{x}(x)=p_{s}(Wx)\cdot|W|$$</code></p>
+
+<blockquote>
+<p>理解这个广义关系，可以从球体概率分布与行列式思路入手。</p>
+</blockquote>
+
+<h2 id="ica-算法">ICA 算法</h2>
+
+<p>假设每个信号源 <code>$s_{i}$</code> 符合概率分布 <code>$p_{s}$</code> ，所有信号源的联合分布如下：</p>
+
+<p><code>$$p(s)=\prod_{i=1}^{n}p_{s}(s_{i})$$</code></p>
+
+<blockquote>
+<p>由于每个信号源之间相互独立，所以可以直接相乘</p>
+</blockquote>
+
+<p>使用之前得到的概率密度分布关系，有：</p>
+
+<p><code>$$p(x)=\prod_{i=1}^{n}p_{s}(w_{i}^{T}x)\cdot|W|$$</code></p>
+
+<p>现在只需要指定 <code>$p_{s}$</code> 属于何种概率分布即可。给定一个实数范围内的随机变量 <code>$z$</code> ，它的累积分布函数 <code>$F$</code> 的定义是 <code>$F(z_{0})=P(z\leq{z_{0}})=\int_{-\infty}^{z_{0}}{p_{z}(z)dz}$</code> 。并且 <code>$z$</code> 的密度分布可以通过对累计分布函数 <code>$F$</code> 求导得到。</p>
+
+<p>根据之前的分析，此处不能选择高斯分布。所以默认选择从 0 到 1 递增的 sigmoid 函数 <code>$g(s)=1/(1+e^{-s})$</code> 。矩阵 <code>$W$</code> 是模型中的参数，并且应用这种概率分布。给定训练集 <code>$\{x^{(i)};i=1,\ldots,m\}$</code> ，对数似然函数如下：</p>
+
+<p><code>$$l(W)=\sum_{i=1}^{m}\left(\sum_{j=1}^{n}\log{g'(w_{j}^{T}x^{(i)})}+\log{|W|}\right)$$</code></p>
+
+<p>以 <code>$W$</code> 为参数最大化上式，对其求导得到随机梯度下降更新规则：</p>
+
+<p><code>$$W:=W+\alpha\left(
+\begin{bmatrix}
+1-2g(w_{1}^{T}x^{(i)}) \\
+1-2g(w_{2}^{T}x^{(i)}) \\
+\vdots \\
+1-2g(w_{n}^{T}x^{(i)}) \\
+\end{bmatrix}{x^{(i)}}^{T}+(W^{T})^{-1}
+\right)$$</code></p>
+
+<blockquote>
+<p>得到更新规则用到了 <code>$\nabla_{W}|W|=|W|(W^{-1})^{T}$</code></p>
+</blockquote>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

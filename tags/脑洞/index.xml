@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>脑洞 on 韩飞的博客</title>
+    <link>https://knightf.coding.me/tags/%E8%84%91%E6%B4%9E/index.xml</link>
+    <description>Recent content in 脑洞 on 韩飞的博客</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <atom:link href="https://knightf.coding.me/tags/%E8%84%91%E6%B4%9E/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Caliban</title>
+      <link>https://knightf.coding.me/post/caliban/</link>
+      <pubDate>Sat, 11 Jun 2016 17:35:48 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/caliban/</guid>
+      <description>
+
+&lt;h1 id=&#34;起源&#34;&gt;起源&lt;/h1&gt;
+
+&lt;h2 id=&#34;启发&#34;&gt;启发&lt;/h2&gt;
+
+&lt;p&gt;看完&lt;a href=&#34;http://movie.mtime.com/208116/&#34;&gt;X战警:天启&lt;/a&gt;之后觉得超能力这种东西对普通的人类好像就有魔力一般。这也是自然，生物本就是向着更高级的存在看齐的。加上前一阵在单位大家都参玩过一个姓名大作战的文字回合游戏，感觉很有意思。用名字对战，其实就是给了你不同的能力。从数值上看，有的人明显就是防战，还有盗贼、法师什么的。说白了也是一种超能力。但这种设计并没有让你长期使用它的意思，因为你只能输入自己的姓名，其余所有东西都是自动生成的。&lt;/p&gt;
+
+&lt;h2 id=&#34;反思&#34;&gt;反思&lt;/h2&gt;
+
+&lt;p&gt;超能力是不是有一种吸引力呢？就我个人的体验来说，是有的：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;观看X战警的时候，看到肆意释放的超能力，总有一种激动的感觉&lt;/li&gt;
+&lt;li&gt;我只是个屌丝，没有钱也没有颜，在人类社会中就总希望也能证明自己&lt;/li&gt;
+&lt;li&gt;我希望和别人不一样&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;如果这几点你也体会过，那么应该是可以同意人是希望拥有超能力的，它是有吸引力的。那么存在于服务器上的超能力真的有意义么？它看不见也摸不到，只能通过通用计算设备访问到，有它的独特之处么？&lt;/p&gt;
+
+&lt;h1 id=&#34;设计&#34;&gt;设计&lt;/h1&gt;
+
+&lt;p&gt;讨论一下如果真的要打造这样的社交附属产品，应该秉持的几个原则。&lt;/p&gt;
+
+&lt;h2 id=&#34;自主配置超能力的余地&#34;&gt;自主配置超能力的余地&lt;/h2&gt;
+
+&lt;p&gt;既然要社交，就要有一个阿凡达。而在这个系统中的阿凡达不应该是姓名大作战这样完全随机的。首先，与自己的超能力有关的内容，应该是允许一定程度的自定义的。我们不妨来看看X战警里面的设定。&lt;/p&gt;
+
+&lt;p&gt;万磁王，他是可以用意念控制金属物体。X教授，可以入侵别人的思想。金刚狼，拥有快速再生的能力。这一众超能力者乍一看，都是很直接的 &lt;em&gt;能力&lt;/em&gt; ，并不能让我们直接拿来照搬。因为我们虽然想要借鉴这个设定，但又不想让每一个参与进来的用户直接定义自己的能力。不然所有人都用凤凰女这样的能力，这个社区没法玩了🐦。&lt;/p&gt;
+
+&lt;p&gt;感谢这个丰富多彩的世界，可以用来学习的素材太多了，比如海贼王。海贼王中每个人都要吃掉恶魔果实才可以获得能力，而在吃掉之前，是不知道恶魔果实会给你带来什么能力的(?)。所以与其让用户直接定义自己的能力，不如定义可以给他们带来能力的东西，之后我们都叫它&lt;strong&gt;燃料&lt;/strong&gt;。这样既可以保留一定的自主，也避免了全部都是凤凰女的窘境。&lt;/p&gt;
+
+&lt;h2 id=&#34;决定超能力的因素&#34;&gt;决定超能力的因素&lt;/h2&gt;
+
+&lt;p&gt;用户可以定义自己超能力，但是怎么把燃料转化成为确定的能力呢？其实我们拿燃料这个名词作为超能力的来源十分贴切，就像万磁王离开了金属，他也只是个普通人一样，每个超能力者都需要一种燃料。既然我在天马星空般的设计，不如就跟着思路走下去。既然叫&lt;strong&gt;燃料&lt;/strong&gt;，那么要产生能量，就需要&lt;strong&gt;燃机️&lt;/strong&gt;了。&lt;/p&gt;
+
+&lt;p&gt;如果要加上点趣味性的话，在燃机这一步最合适不过了。可以随机给出不同的燃机，得出不同的结果。给定组合&lt;code&gt;(燃料, 燃机)&lt;/code&gt;，是决定一种超能力的一个且唯一一个因素。&lt;/p&gt;
+
+&lt;h2 id=&#34;谁更强&#34;&gt;谁更强？&lt;/h2&gt;
+
+&lt;p&gt;既然这样的组合决定了一种超能力，那么怎么比较两种超能力哪种更强呢？所以这个组合可以更具体的定义出来，即：&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;燃料是一段hash值，用&lt;code&gt;factor&lt;/code&gt;表示&lt;/p&gt;
+
+&lt;p&gt;燃机是一个函数，用&lt;code&gt;sp&lt;/code&gt;表示，&lt;code&gt;sp&lt;/code&gt;有一个输入值，即&lt;code&gt;factor&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;sp&lt;/code&gt;的输出是一个浮点数，即这种超能力的战斗力&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;所以还是必须得有一个数值，我们这些人类才能让计算机做比较。&lt;/p&gt;
+
+&lt;h2 id=&#34;随机性&#34;&gt;随机性&lt;/h2&gt;
+
+&lt;p&gt;就好像变种人一开始也不知道自己会有什么样的超能力一样，谁也不知道自己的超能力该怎么用，谁和谁相互克制。可以用图来表示各种超能力之间的关系。图中的顶点代表每种超能力，边存储处理战斗力的函数。所以即便你拥有像是凤凰女一样的超高战斗力，如果另一边是镭射眼，两个人经过边上存储的函数的计算，得到最终的伤害数值。&lt;/p&gt;
+
+&lt;h1 id=&#34;总结&#34;&gt;总结&lt;/h1&gt;
+
+&lt;p&gt;上面只是一些粗浅的想法。感觉我会有心情写这些，真的是受到了当年&lt;a href=&#34;http://www.discuz.net/forum.php&#34;&gt;Discuz&lt;/a&gt;这样的论坛系统毒害太深，当时在论坛社交的大背景下面，真的是涌现出了众多的勋章、游戏系统，给当时泡坛子增添了很多趣味。但我后来越来越少上论坛，当时年龄也小没有能力做自己的论坛插件，所以对这些还有一点执念。而现在微博、微信这些大平台的接口越来越多，也想尝试一下。&lt;/p&gt;
+
+&lt;p&gt;小应用的名字也起好了，叫&lt;strong&gt;Caliban&lt;/strong&gt;。&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,326 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>机器学习 第九章 EM 算法 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>机器学习 第九章 EM 算法</h1>
+                    <h2 class="headline">
+                    May 18, 2017 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/machine-learning">Machine Learning</a>
+                        
+                            <a href="https://knightf.coding.me/tags/stanford-cs229">Stanford CS229</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<h2 id="詹森不等式">詹森不等式</h2>
+
+<p><strong>定理</strong> <code>$f$</code> 为一凸函数，<code>$X$</code> 为一随机变量，有：</p>
+
+<p><code>$$E[f(X)] \geq f(E[X])$$</code></p>
+
+<p>如果 <code>$f$</code> 是严格凸函数，那么 <code>$E(f(X)) = f(E[X])$</code> 当且仅当 <code>$X = E[X]$</code> 的概率为 1 时成立。</p>
+
+<p>对凹函数，改变不等式符号的方向即可。</p>
+
+<h2 id="em-算法">EM 算法</h2>
+
+<p>考虑解决一个估计问题。问题包含 <code>$m$</code> 个独立样本，试图估计出 <code>$p(x, z)$</code> 模型中的参数，其似然结果如下：</p>
+
+<p><code>$$
+\begin{eqnarray}
+l(\theta) &amp;=&amp; \sum_{i=1}^{m}{\log{p(x;\theta)}} \\
+&amp;=&amp; \sum_{i=1}^{m}{\log{\sum_{z}{p(x,z;\theta)}}}
+\end{eqnarray}
+$$</code></p>
+
+<p><code>$z^{(i)}$</code> 现在为隐含变量；如果它的值是已知的则问题变得简单（也就是监督学习）。</p>
+
+<p>直接求似然最大值很困难；取而代之则是不断重复给出 <code>$l$</code> 的下界 (E 步骤) ，并优化下界的值 (M 步骤) 。</p>
+
+<p>对每个 <code>$i$</code> ，令 <code>$Q_i$</code> 为 <code>$z$</code> 的某概率分布。<code>$\sum_{z}{Q_{i}(z)=1}$</code> ， <code>$Q_{i}(z) \geq 0$</code> 。考虑：</p>
+
+<p><code>$$
+\begin{eqnarray}
+\sum_{i}{\log{p(x^{(i)};\theta)}} &amp;=&amp; \sum_{i}{\log{\sum_{z^{(i)}}{p(x^{(i)},z^{(i)};\theta)}}} \tag{1} \\
+&amp;=&amp; \sum_{i}{\log{\sum_{z^{(i)}}{Q_{i}(z^{(i)})\frac{p(x^{(i)},z^{(i)};\theta)}{Q_{i}(z^{(i)})}}}} \tag{2} \\
+&amp;\geq&amp; \sum_{i}{\sum_{z^{(i)}}{Q_{i}\log{\frac{p(x^{(i)},z^{(i)};\theta)}{Q_{i}(z^{(i)})}}}} \tag{3}
+\end{eqnarray}
+$$</code></p>
+
+<p>推导的最后一步用了詹森不等式。<code>$f(x)=\log{x}$</code> 是一个凹函数。并且</p>
+
+<p><code>$$\sum_{z^{(i)}}{Q_{i}{(z^{(i)})[\frac{p(x^{(i)},z^{(i)};\theta)}{Q_{i}(z^{(i)})}]}}$$</code></p>
+
+<p>是 <code>$z^{(i)}$</code> 关于概率分布 <code>$Q_i$</code> 的期望。根据詹森不等式，就有：</p>
+
+<p><code>$$f(E_{z^{(i)}{\sim}Q_{i}}[\frac{p(x^{(i)},z^{(i)};\theta)}{Q_{i}(z^{(i)})}]) \geq E_{z^{(i)}{\sim}Q_{i}}[f(\frac{p(x^{(i)},z^{(i)};\theta)}{Q_{i}(z^{(i)})})]$$</code></p>
+
+<p>由式子 (3) 可知，对于任意的概率分布 <code>$Q_i$</code> ，<code>$l$</code> 都有了下界。选择何种概率模型 <code>$Q_i$</code> 是一个问题。如果已经有了对于参数 <code>$\theta$</code> 的估计，那么固定住下界的值显得很自然。也就是说对于固定的 <code>$\theta$</code> 需要不等式变为等式。</p>
+
+<p>令等式成立，需要对一个定值取期望。也就是说：</p>
+
+<p><code>$$\frac{p(x^{(i)},z^{(i)};\theta)}{Q_{i}(z^{(i)})} = c$$</code></p>
+
+<p>这个需求很容易满足，只需：</p>
+
+<p><code>$$Q_{i}(z^{(i)}) \propto p(x^{(i)},z^{(i)};\theta)$$</code></p>
+
+<p>并且由于它的概率分布特性，有 <code>$\sum_{z}{Q_{i}{(z^{(i)})}} = 1$</code> 。说明：</p>
+
+<p><code>$$\begin{eqnarray}
+Q_{i}(z^{(i)}) &amp;=&amp; \frac{p(x^{(i)},y^{(i)};\theta)}{\sum_{z}{p(x^{(i)},z;\theta)}} \\
+&amp;=&amp; \frac{p(x^{(i)},y^{(i)};\theta)}{p(x^{(i)};\theta)} \\
+&amp;=&amp; p(z^{(i)}|x^{(i)};\theta)
+\end{eqnarray}$$</code></p>
+
+<p>所以指定分布 <code>$Q_i$</code> 为给定 <code>$x^{(i)}$</code> 与参数 <code>$\theta$</code> 时 <code>$z^{(i)}$</code> 的后验概率分布。现在依据这种对 <code>$Q_i$</code> 的选择，式子 (3) 给出了试图最大化的似然对数的下界。这是 E 步骤。M 步骤中，根据 E 步骤得到的结果最大化 <code>$\theta$</code> 。重复这两步就是 EM 算法：</p>
+
+<p>重复以下两步直到收敛</p>
+
+<p><strong>E 步骤</strong> 对于每个 <code>$i$</code> ，<code>$Q_{i}(z^{(i)}) := p(z^{(i)}|x^{(i)};\theta)$</code> 。</p>
+
+<p><strong>M 步骤</strong> <code>$\theta := \arg\max_{\theta}\sum_{i}{\sum_{z^{(i)}}{Q_{i}(z^{(i)})\log{\frac{p(x^{(i)},z^{(i)};\theta)}{Q_i(z^{(i)})}}}}$</code> 。</p>
+
+<h2 id="混合高斯模型">混合高斯模型</h2>
+
+<p>回顾由参数 <code>$\phi$</code>, <code>$\mu,$</code> 和 <code>$\Sigma$</code> 构成的混合高斯模型。E 步骤很简单。根据上面的公式，有：</p>
+
+<p><code>$$w_{j}^{(i)} = Q_i(z^{(i)}=j) = P(z^{(i)}=j|x^{(i)};\phi,\mu,\Sigma)$$</code></p>
+
+<p>M 步骤中，需要最大化的式子为：</p>
+
+<p><code>$$\begin{eqnarray}
+&amp;&amp; \sum_{i=1}^{m}{\sum_{z^{(i)}}{Q_{i}(z^{(i)})\log{\frac{p(x^{(i)},z^{(i)};\phi,\mu,\Sigma)}{Q_i(z^{(i)})}}}} \\
+&amp;=&amp; \sum_{i=1}^{m}{\sum_{j=1}^{k}{Q_{i}(z^{(i)}=j)\log{\frac{p(x^{(i)}|z^{(i)}=j;\mu,\Sigma)p(z^{(i)}=j;\phi)}{Q_i(z^{(i)}=j)}}}} \\
+&amp;=&amp; \sum_{i=1}^{m}{\sum_{j=1}^{k}{w_{j}^{(i)}\log{\frac{\frac{1}{(2\pi)^{\frac{n}{2}}{|\Sigma_{j}|}^{\frac{1}{2}}}\exp{(-\frac{1}{2}(x^{(i)}-\mu_{j})^{T}\Sigma_{j}^{-1}(x^{(i)}-\mu_{j}))}\cdot\phi_{j}}{w_{j}^{(i)}}}}}
+\end{eqnarray}$$</code></p>
+
+<p>对 <code>$\mu_{l}$</code> 求最大值：</p>
+
+<p><code>$$\begin{eqnarray}
+&amp;&amp; \nabla_{\mu_{l}}{\sum_{i=1}^{m}{\sum_{j=1}^{k}{w_{j}^{(i)}\log{\frac{\frac{1}{(2\pi)^{\frac{n}{2}}{|\Sigma_{j}|}^{\frac{1}{2}}}\exp{(-\frac{1}{2}(x^{(i)}-\mu_{j})^{T}\Sigma_{j}^{-1}(x^{(i)}-\mu_{j}))}\cdot\phi_{j}}{w_{j}^{(i)}}}}}} \\
+&amp;=&amp; -\nabla_{\mu_{l}}{\sum_{i=1}^{m}{\sum_{j=1}^{k}{w_{j}^{(i)}\frac{1}{2}(x^{(i)}-\mu_{j})^{T}\Sigma_{j}^{-1}(x^{(i)}-\mu_{j})}}} \\
+&amp;=&amp; \frac{1}{2}\sum_{i=1}^{m}{w_{l}^{(i)}\nabla_{\mu_{l}}2\mu_{l}^{T}\Sigma_{l}^{-1}x^{(i)}-\mu_{l}^{T}\Sigma_{l}^{-1}\mu_{l}} \\
+&amp;=&amp; \sum_{i=1}^{m}{w_{l}^{(i)}(\Sigma_{l}^{-1}x^{(i)}-\Sigma_{l}^{-1}\mu_{l})}
+\end{eqnarray}$$</code></p>
+
+<p>令其等于 0 ，得到 <code>$\mu_{l}$</code> 的更新公式：</p>
+
+<p><code>$$\mu_{l} := \frac{\sum_{i=1}^{m}{w_{l}^{(i)}x^{(i)}}}{\sum_{i=1}^{m}{w_{l}^{(i)}}}$$</code></p>
+
+<p>对于 <code>$\phi_j$</code> ，去掉与其无关的多项式得到需要最大化的式子为：</p>
+
+<p><code>$$\sum_{i=1}^{m}{\sum_{j=1}^{k}{w_{j}^{(i)}\log{\phi_{j}}}}$$</code></p>
+
+<p>由 <code>$\sum_{j=1}^{k}{\phi_{j}}=1$</code> 的约束条件可以构建拉格朗日算子：</p>
+
+<p><code>$$\mathcal{L}(\phi)=\sum_{i=1}^{m}{\sum_{j=1}^{k}{w_{j}^{(i)}\log{\phi_{j}}}}+\beta(\sum_{j=1}^{k}{\phi_{j}}-1)$$</code></p>
+
+<p>求偏导得到：</p>
+
+<p><code>$$\frac{\partial}{\partial\phi_{j}}\mathcal{L}(\phi)=\sum_{i=1}^{m}{\frac{w_{j}^{(i)}}{\phi_{j}}}+1$$</code></p>
+
+<p>令其等于 0 ，得到：</p>
+
+<p><code>$$\phi_{j}=\frac{\sum_{i=1}^{m}{w_{j}^{(i)}}}{-\beta}$$</code></p>
+
+<p>由于概率分布特性 (和必需为 1) ，则有更新公式为：</p>
+
+<p><code>$$\phi_{j} := \frac{1}{m}\sum_{i=1}^{m}{w_{j}^{(i)}}$$</code></p>
+
+<p>协方差矩阵 <code>$\Sigma_{j}$</code> 的更新公式可以通过类似方法得到。</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

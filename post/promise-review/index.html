@@ -1,0 +1,411 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>回头看Promise &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>回头看Promise</h1>
+                    <h2 class="headline">
+                    October 13, 2016 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/javascript">JavaScript</a>
+                        
+                            <a href="https://knightf.coding.me/tags/promise">Promise</a>
+                        
+                            <a href="https://knightf.coding.me/tags/es5">ES5</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<p>一个 Promise 对象，有三种状态：</p>
+
+<ul>
+<li><code>pending</code>， 这是初始的状态</li>
+<li><code>fulfilled</code>，这是表示代码成功执行的状态</li>
+<li><code>rejected</code>，这是表示代码执行失败的状态</li>
+</ul>
+
+<p><br></p>
+
+<p>Promise 简化处理的无非就是这几种状态转换的过程。帮助保证状态只能从 <code>pending</code> 到 <code>fulfilled</code> 并不再改变，或者从 <code>pending</code> 到 <code>rejected</code> 并不再改变。可见它帮助我们构建了一个严谨完善的状态机，这也就是使用它便利的地方。</p>
+
+<h2 id="准备工作">准备工作</h2>
+
+<pre><code class="language-javascript">var PENDING = 0,
+    FULFILLED = 1,
+    REJECTED = 2;
+
+function Promise(fn) {
+  var state = PENDING,
+      value = null;
+
+  function fulfill(val) {
+    state = FULFILLED;
+    value = val;
+  }
+
+  function reject(reason) {
+    state = REJECTED;
+    value = reason;
+  }
+}
+</code></pre>
+
+<p>基础的内容写好了。三种可能出现的状态作为常量先定义好。 <code>state</code> 用来存放当前 Promise 对象的状态是什么，一开始当然是 <code>pending</code> 。 <code>value</code> 用来存放成功或者失败产生的结果，但现在初始时什么都没有所以是 <code>null</code> 。</p>
+
+<p>然后我们新建了两个工具函数帮我们做状态的转换。 <code>fulfill</code> 这个函数接受成功时返回的值，更改状态并且存起来。同理，<code>reject</code> 函数接受失败的值并更改状态。</p>
+
+<pre><code class="language-javascript">function doResolve(fn, onFulfill, onReject) {
+  var done = false;
+  try {
+    fn(function(val) {
+      if (done) return;
+      done = true;
+      onFulfill(val);
+    }, function(e) {
+      if (done) return;
+      done = true;
+      onReject(e);
+    });
+  } catch(e) {
+    if (done) return;
+    done = true;
+    onReject(e);
+  }
+}
+</code></pre>
+
+<p>我们又新建了一个 <code>doResolve</code> 工具函数。这个函数有三个形参。 <code>fn</code> 是包含异步过程的函数， <code>onFulfill</code> 是一个成功时执行的函数， <code>onReject</code> 是一个失败时执行的函数。这个工具函数的逻辑就是整个 Promise 的核心思想的体现。</p>
+
+<p>整个函数很简单。创建了一个布尔值 <code>done</code> 用来表示异步过程有没有结束。用 try-catch 的结构包裹住 <code>fn</code> 执行的过程。可以看到在每一个分支进行处理的代码中，都对 <code>done</code> 做了判断，因为如果它已经结束了，我们根本就不用做任何事了。</p>
+
+<h2 id="按照基本法">按照基本法</h2>
+
+<p>新建 Promise 时，包含异步操作的函数是需要使用者提供的，所以在 <code>fn</code> 中是可以 <code>resolve</code> 任何东西的。但是显然我们不能接受 <code>resolve</code> 另一个 Promise ，这是不符合规范的。当 <code>resolve</code> 执行时，应该返回一个确定的值，而不是别的异步操作。想法也很直接，我们直接检查一下传递进来的值是不是一个 Promise 。</p>
+
+<pre><code class="language-javascript">function getThen(val) {
+  var t = typeof val;
+  if (val &amp;&amp; (t == 'function' || t == 'object')) {
+    var then = val.then;
+    if (typeof then == 'function') {
+      return then;
+    }
+  }
+  return null;
+}
+</code></pre>
+
+<p>在函数 <code>getThen</code> 中，我们检查了传进来的 <code>val</code> 是不是有一个叫做 <code>then</code> 的成员方法，如果有就返回这个方法，如果没有就返回空。</p>
+
+<p>有了 <code>getThen</code> 和 <code>doResolve</code> 这两个方法，我们就可以写出一个包含完整的 resolve 流程的函数如下。</p>
+
+<pre><code class="language-javascript">function Promise(fn) {
+  // ...
+
+  function resolve(result) {
+    try {
+      var then = getThen(result);
+      if (then) {
+        doResolve(then.bind(result), resolve, reject);
+      }
+      fulfill(result);
+    } catch(e) {
+      reject(e);
+    }
+  }
+
+  doResolve(fn, resolve, reject);
+}
+</code></pre>
+
+<p>在这个 <code>resolve</code> 函数中，我们先检查了结果有没有 <code>then</code> 方法。如果有，我们就调用一次 <code>doResolve</code> 方法，让这个 <code>then</code> 方法执行。然后我们 fulfill 这个 Promise 。当然，中间如果发生错误我们就 reject 掉这个 Promise 。</p>
+
+<h2 id="完成之后">完成之后</h2>
+
+<p>写到这里还不算完，还没有实现最关键的 <code>then</code> 方法。之所以 Promise 可以用 <code>then</code> 方法串起来，无非就是每一次都返回一个新的 Promise 来实现。而使用 <code>then</code> 可以保证顺序，也是基于 <code>done</code> 方法。</p>
+
+<pre><code class="language-javascript">function Promise(fn) {
+  // ...
+  
+  var state = PENDING,
+      value = null,
+      handlers = [];
+
+  function fulfill(val) {
+    state = FULFILLED;
+    value = val;
+    handlers.forEach(handle);
+    handlers = null;
+  }
+
+  function reject(reason) {
+    state = REJECTED;
+    value = reason;
+    handlers.forEach(handle);
+    handlers = null;
+  }
+
+  function handle(handler) {
+    if (state == PENDING) {
+      handlers.push(handler);
+    } else {
+      if (state == FULFILLED &amp;&amp; typeof handler.onFulfilled == 'function') {      
+        handler.onFullfilled(value);
+      }
+      if (state == REJECTED &amp;&amp; typeof handler.onRejected == 'function') {
+        handler.onRejected(value);
+      }
+    }
+  }
+
+  this.done = function(onFulfilled, onRejected) {
+    setTimeout(function() {
+      handle({
+        onFulfilled: onFulfilled,
+        onRejected: onRejected,
+      });
+    }, 0);
+  }
+
+}
+</code></pre>
+
+<p>之所以能够保证使用 <code>done</code> 方法时，里面的代码是异步操作结束后执行，用的就是广播的机制。新建了一个 <code>handlers</code> 数组，用来存放所有通过 <code>done</code> 方法注册的 handler 。在 <code>fulfill</code> 和 <code>reject</code> 方法中，也做了对应的修改，使其调用这些 handler 。工具函数 <code>handle</code> 可以根据 Promise 的状态来注册 handler 或者调用它们。 <code>done</code> 方法则极端简单，用 <code>setTimeout</code> 把 handler 的注册放在时间片队列的末尾，保证异步。</p>
+
+<h2 id="一篑之功">一篑之功</h2>
+
+<p>有了 <code>done</code> 这个关键的方法， <code>then</code> 方法也就不那么难写了。我们只要让 <code>then</code> 方法接收两个函数分别对应成功与失败两个状态，并且返回一个新的 Promise 。而在这个 Promise 中，我们只要把这两个函数分别对应绑定到老的 Promise 的 <code>done</code> 方法里就行了。</p>
+
+<pre><code class="language-javascript">function Promise(fn) {
+  // ...
+
+  this.then = function(onFulfilled, onRejected) {
+    var self = this;  // cache this;
+    return new Promise(function(resolve, reject) {
+      return self.done(function(result){
+        if (typeof onFulfilled == 'function') {
+          try {
+            return resolve(onFulfilled(result));
+          } catch(e) {
+            return reject(e);
+          }
+        } else {
+          return resolve(result);
+        }
+      }, function(ex) {
+        if (typeof onRejected == 'function') {
+          try {
+            return resolve(onRejected(result));
+          } catch(e) {
+            return reject(e);
+          }
+        } else {
+          return reject(ex);
+        }
+      });
+    });
+  }
+}
+</code></pre>
+
+<p>就像之前描述的一样，我们构造了一个 Promise ，让它接收 <code>onFulfilled</code> 和 <code>onRejected</code> 函数处理过的结果来 resolve 或者 reject 。</p>
+
+<h2 id="总结">总结</h2>
+
+<ol>
+<li><code>doResolve</code> 是异步操作运行的核心。</li>
+<li><code>done</code> 的实现是广播。</li>
+<li><code>then</code> 构建了指定形式的新 Promise 来完成链式结构。</li>
+</ol>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

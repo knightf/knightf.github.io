@@ -1,0 +1,477 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>机器学习 第十章 因子分析 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>机器学习 第十章 因子分析</h1>
+                    <h2 class="headline">
+                    May 31, 2017 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/machine-learning">Machine Learning</a>
+                        
+                            <a href="https://knightf.coding.me/tags/stanford-cs229">Stanford CS229</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<p>当数据集中的数据维度远远大于数据集数目的时候，很难通过一个高斯模型描述数据，更不要说用混合高斯模型了。一个高斯模型中：</p>
+
+<p><code>$$
+\begin{eqnarray}
+\mu &amp;=&amp; \frac{1}{m}\sum_{i=1}^{m}{x^{(i)}} \\
+\Sigma &amp;=&amp; \frac{1}{m}\sum_{i=1}^{m}{(x^{(i)}-\mu)(x^{(i)}-\mu)^{T}}
+\end{eqnarray}
+$$</code></p>
+
+<p>如果出现上面描述的情形，矩阵 <code>$\Sigma$</code> 不是一个奇异矩阵，不能提供计算高斯密度分布需要的逆矩阵。试图使用高斯模型拟合数据是否仍然可行？</p>
+
+<h2 id="高斯的边际分布和条件分布">高斯的边际分布和条件分布</h2>
+
+<p>在描述因子分析模型之前，先讲如何在多参数高斯分布中求边际分布和条件分布。</p>
+
+<p>假设随机变量为：</p>
+
+<p><code>$$x=
+\begin{bmatrix}
+x_{1} \\
+x_{2}
+\end{bmatrix}
+$$</code></p>
+
+<p>其中 <code>$x_{1}$</code> 的长度为 <code>$r$</code> ， <code>$x_{2}$</code> 的长度为 <code>$s$</code> ，整体的长度为 <code>$r+s$</code> 。假设 <code>$x\sim\mathcal{N}(\mu,\Sigma)$</code> ，其中：</p>
+
+<p><code>$$
+\begin{eqnarray}
+\mu &amp;=&amp;
+\begin{bmatrix}
+\mu_{1} \\
+\mu_{2}
+\end{bmatrix} \\
+\Sigma &amp;=&amp;
+\begin{bmatrix}
+\Sigma_{11} &amp; \Sigma_{12} \\
+\Sigma_{21} &amp; \Sigma_{22}
+\end{bmatrix}
+\end{eqnarray}
+$$</code></p>
+
+<p>由于协方差矩阵是对称的，<code>$\Sigma_{12} = \Sigma_{21}^{T}$</code> 。更进一步带入协方差公式的定义有：</p>
+
+<p><code>$$
+\begin{eqnarray}
+Cov(x) &amp;=&amp; \Sigma \\
+&amp;=&amp; \begin{bmatrix}
+\Sigma_{11} &amp; \Sigma_{12} \\
+\Sigma_{21} &amp; \Sigma_{22} \\
+\end{bmatrix} \\
+&amp;=&amp; \mathbf{E}{[(x-\mu)(x-\mu)^{T}]} \\
+&amp;=&amp; \mathbf{E}
+\begin{bmatrix}
+\begin{pmatrix} x_{1}-\mu_{1} \\ x_{2}-\mu_{2} \end{pmatrix}
+\begin{pmatrix} x_{1}-\mu_{1} \\ x_{2}-\mu_{2} \end{pmatrix}^{T}
+\end{bmatrix} \\
+&amp;=&amp; \mathbf{E}
+\begin{bmatrix}
+(x_{1}-\mu_{1})(x_{1}-\mu_{1})^{T} &amp; (x_{1}-\mu_{1})(x_{2}-\mu_{2})^{T} \\
+(x_{2}-\mu_{2})(x_{1}-\mu_{1})^{T} &amp; (x_{2}-\mu_{2})(x_{2}-\mu_{2})^{T}
+\end{bmatrix}
+\end{eqnarray}
+$$</code></p>
+
+<p>由于高斯分布的边际分布也是高斯分布，就有边际分布 <code>$x_{1}\sim\mathcal{N}(\mu_{1},\Sigma_{11})$</code> 。同时可以得出给定 <code>$x_{2}$</code> 时 <code>$x_{1}$</code> 的条件分布也是高斯分布， <code>$x_{1}|x_{2} \sim \mathcal{N}(\mu_{1|2},\Sigma_{1|2})$</code> ，其中：</p>
+
+<p><code>$$
+\begin{eqnarray}
+\mu_{1|2} &amp;=&amp; \mu_{1}+\Sigma_{12}\Sigma_{22}^{-1}(x_2-\mu{2}) \tag{1}\\
+\Sigma_{1|2} &amp;=&amp; \Sigma_{11}-\Sigma_{12}\Sigma_{22}^{-1}\Sigma_{21} \tag{2}
+\end{eqnarray}
+$$</code></p>
+
+<p><strong>找到高斯分布中边际分布与条件分布的求法，就可以构建某隐含变量与原数据集的联系。</strong></p>
+
+<h2 id="因子分析模型">因子分析模型</h2>
+
+<p>模型中假设 <code>$(x,z)$</code> 的联合分布中， <code>$z\in\mathcal{R}^{k}$</code> 是隐含变量，分布有如下关系：</p>
+
+<p><code>$$
+\begin{eqnarray}
+z &amp;\sim&amp; \mathcal{N}(0,I) \\
+x|z &amp;\sim&amp; \mathcal{N}(\mu+\Lambda{z},\Psi)
+\end{eqnarray}
+$$</code></p>
+
+<p>模型中的参数是向量 <code>$\mu\in\mathcal{R}^{n}$</code> ，矩阵 <code>$\Lambda\in\mathcal{R}^{n\times{k}}$</code> 和对角矩阵 <code>$\Psi\in\mathcal{R}^{n\times{n}}$</code> 。 <code>$k$</code> 通常取小于 <code>$n$</code> 的值。</p>
+
+<p>由上对于变量分布的描述，可发现模型采取的思路。首先，隐含变量 <code>$z$</code> 符合高斯分布，然后它经 <code>$\mu+\Lambda z^{(i)}$</code> 的线性变换映射到了 <code>$\mathcal{R}^{n}$</code> 空间中，最后 <code>$x^{(i)}$</code> 经由添加了噪声 <code>$\Psi$</code> 得到。所以模型亦可按照以下方式描述：</p>
+
+<p><code>$$
+\begin{eqnarray}
+z &amp;\sim&amp; \mathcal{N}(0,I) \\
+\epsilon &amp;\sim&amp; \mathcal{N}(0,\Psi) \\
+x &amp;=&amp; \mu+\Lambda{z}+\epsilon
+\end{eqnarray}
+$$</code></p>
+
+<p>可以得见 <code>$\epsilon$</code> 和 <code>$z$</code> 是独立变量。接下来介绍更详细的定义。随机变量 <code>$z$</code> 和 <code>$x$</code> 符合联合高斯分布：</p>
+
+<p><code>$$\begin{bmatrix}z\\x\end{bmatrix}\sim\mathcal{N}(\mu_{zx},\Sigma)$$</code></p>
+
+<p><code>$\mu_{zx}$</code> 代表随机变量的均值。随机变量 <code>$z$</code> 的均值是 <code>$0$</code> ， <code>$x$</code> 的均值是 <code>$\mu$</code> 。所以有：</p>
+
+<p><code>$$\mu_{zx} = \begin{bmatrix}\overrightarrow{0}\\\mu\end{bmatrix}$$</code></p>
+
+<p>协方差矩阵根据上面边际分布的描述，有：</p>
+
+<p><code>$$
+\begin{eqnarray}
+\Sigma_{zz} &amp;=&amp; Cov(z) = I \\
+\Sigma_{zx} &amp;=&amp; \mathbf{E}[(z-\mathbf{E}[z])(x-\mathbf{E}[x])^{T}] \\
+&amp;=&amp; \mathbf{E}[z(\mu+\Lambda{z}+\epsilon-\mu)^{T}] \\
+&amp;=&amp; \mathbf{E}[zz^{T}]\Lambda^{T}+\mathbf{E}[z\epsilon^{T}] \\
+&amp;=&amp; \Lambda^{T} \\
+\Sigma_{xz} &amp;=&amp; \Sigma_{zx}^{T} = \Lambda \\
+\Sigma_{xx} &amp;=&amp; \mathbf{E}[(x-\mathbf{E}[x])(x-\mathbf{E}[x])^{T}] \\
+&amp;=&amp; \mathbf{E}[(\mu+\Lambda{z}+\epsilon-\mu)(\mu+\Lambda{z}+\epsilon-\mu)^{T}] \\
+&amp;=&amp; \mathbf{E}[\Lambda{z}{z}^{T}\Lambda^{T}+\epsilon{z}^{T}\Lambda^{T}+\Lambda{z}\epsilon^{T}+\epsilon\epsilon^{T}] \\
+&amp;=&amp; \Lambda\mathbf{E}[zz^{T}]\Lambda^{T}+\mathbf{E}[\epsilon\epsilon^T] \\
+&amp;=&amp; \Lambda\Lambda^T+\Psi
+\end{eqnarray}
+$$</code></p>
+
+<p>整理一下得到了完整的描述：</p>
+
+<p><code>$$
+\begin{eqnarray}
+\begin{bmatrix}z\\x\end{bmatrix}
+&amp;\sim&amp;
+\mathcal{N}\left(
+\begin{bmatrix}\overrightarrow{0}\\\mu\end{bmatrix},
+\begin{bmatrix}
+I &amp; \Lambda^{T} \\
+\Lambda &amp; \Lambda\Lambda^{T}+\Psi
+\end{bmatrix}
+\right) \tag{3}\\
+x &amp;\sim&amp; \mathcal{N}(\mu,\Lambda\Lambda^{T}+\Psi)
+\end{eqnarray}
+$$</code></p>
+
+<p>包含所有参数的对数似然函数如下：</p>
+
+<p><code>$$
+l(\mu,\Lambda,\Psi) = \log{\prod_{i=1}^{m}{
+  \frac{1}{(2\pi)^{n/2}|\Lambda\Lambda^{T}+\Psi|^{1/2}}
+  \exp{\left(
+  -\frac{1}{2}(x^{(i)}-\mu)^{T}(\Lambda\Lambda^{T}+\Psi)^{-1}(x^{(i)}-\mu)
+  \right)}
+}}
+$$</code></p>
+
+<p>最大化对数似然估计就可以求得各参数的值，但直接求值十分困难。</p>
+
+<h2 id="应用-em-算法求解因子分析模型">应用 EM 算法求解因子分析模型</h2>
+
+<p>将等式 (3) 中的值代入等式 (1) 与 (2) ，可以得到条件概率 <code>$z^{(i)}|x^{(i)}$</code> ，其中：</p>
+
+<p><code>$$
+\begin{eqnarray}
+\mu_{z^{(i)}|x^{(i)}} &amp;=&amp; \Lambda^{T}(\Lambda\Lambda^{T}+\Psi)^{-1}(x^{(i)}-\mu) \\
+\Sigma_{z^{(i)}|x^{(i)}} &amp;=&amp; I-\Lambda^{T}(\Lambda\Lambda^{T}+\Psi)^{-1}\Lambda
+\end{eqnarray}
+$$</code></p>
+
+<p>所以 E步骤 中的式子已经得到了：</p>
+
+<p><code>$$
+Q_{i}(z^{(i)})=
+\frac{1}{(2\pi)^{k/2}{|\Sigma_{\mu_{z^{(i)}|x^{(i)}}}|}^{1/2}}
+\exp{\left(\
+-\frac{1}{2}
+(z^{(i)}-\mu_{z^{(i)}|x^{(i)}})^{T}
+\Sigma_{z^{(i)}|x^{(i)}}^{-1}
+(z^{(i)}-\mu_{z^{(i)}|x^{(i)}})
+\right)}
+$$</code></p>
+
+<p>根据 EM算法 的定义，接下来在 M步骤 中需要最大化的式子如下：</p>
+
+<p><code>$$\sum_{i=1}^{m}\int_{z^{(i)}}{Q_{i}(z^{(i)})\log{\frac{p(x^{(i)},z^{(i)};\mu,\Lambda,\Psi)}{Q_{i}(z^{(i)})}}dx^{(i)}} \tag{4}$$</code></p>
+
+<p>试求 <code>$\Lambda$</code> 的更新公式。等式 (4) 中的积分，可以等价于随机变量 <code>$z^{(i)}$</code> 的期望。所以：</p>
+
+<p><code>$$
+\begin{eqnarray}
+\sum_{i=1}^{m}\int_{z^{(i)}}{Q_{i}(z^{(i)})
+\left[\log{p(x^{(i)}|z^{(i)};\mu,\Lambda,\Psi)+\log{p(z^{(i)})}-\log{Q_{i}(z^{(i)})}}\right]
+dz^{(i)}} \tag{5} \\
+= \sum_{i=1}^{m}\mathbf{E}_{z^{(i)} \sim Q_{i}}\left[
+\log{p(x^{(i)}|z^{(i)};\mu,\Lambda,\Psi)+\log{p(z^{(i)})}-\log{Q_{i}(z^{(i)})}}
+\right] \tag{6}
+\end{eqnarray}
+$$</code></p>
+
+<p>去除其他不相关、或者是在 E步骤 中确定的变量，需要最大化的式子变为：</p>
+
+<p><code>$$
+\begin{eqnarray}
+&amp;&amp; \sum_{i=1}^{m}\mathbf{E}[\log{p(x^{(i)}|z^{(i)};\mu,\Lambda,\Psi)}] \\
+&amp;=&amp; \sum_{i=1}^{m}\mathbf{E}\left[
+\log{\frac{1}{(2\pi)^{n/2}{|\Psi|}^{1/2}}}
+\exp{\left(-\frac{1}{2}(x^{(i)}-\mu-\Lambda{z^{(i)}})^{T}\Psi^{-1}(x^{(i)}-\mu-\Lambda{z^{(i)}})
+\right)}\right] \\
+&amp;=&amp; \sum_{i=1}^{m}\mathbf{E}\left[
+-\frac{1}{2}\log{|\Psi|}-\frac{n}{2}\log{(2\pi)}
+-\frac{1}{2}(x^{(i)}-\mu-\Lambda{z^{(i)}})^{T}\Psi^{-1}(x^{(i)}-\mu-\Lambda{z^{(i)}})
+\right] \\
+\end{eqnarray}
+$$</code></p>
+
+<p>可见多项式中只有最后一项中含有 <code>$\Lambda$</code> ，对其求导并且使用 <code>$\mathbf{tr}a=a$</code> ， <code>$\mathbf{AB}=\mathbf{BA}$</code> 和 <code>$\nabla_{A}\mathbf{tr}ABA^{T}C=CAB+C^{T}AB$</code> ，可以得到：</p>
+
+<p><code>$$
+\begin{eqnarray}
+&amp;&amp; \nabla_{\Lambda}\sum_{i=1}^{m}-\mathbf{E}\left[\frac{1}{2}(x^{(i)}-\mu-\Lambda{z^{(i)}})^{T}\Psi^{-1}(x^{(i)}-\mu-\Lambda{z^{(i)}})\right] \\
+&amp;=&amp; \sum_{i=1}^{m}\nabla_{\Lambda}\mathbf{E}\left[-\mathbf{tr}\frac{1}{2}{z^{(i)}}^{T}\Lambda^{T}\Psi^{-1}\Lambda{z}^{(i)}+\mathbf{tr}{z^{(i)}}^{T}\Lambda^{T}\Psi^{-1}(x^{(i)}-\mu)\right] \\
+&amp;=&amp; \sum_{i=1}^{m}\nabla_{\Lambda}\mathbf{E}\left[-\mathbf{tr}\frac{1}{2}\Lambda^{T}\Psi^{-1}\Lambda{z}^{(i)}{z^{(i)}}^{T}+\mathbf{tr}\Lambda^{T}\Psi^{-1}(x^{(i)}-\mu){z^{(i)}}^{T}\right] \\
+&amp;=&amp; \sum_{i=1}^{m}\mathbf{E}\left[-\Psi^{-1}\Lambda{z}^{(i)}{z^{(i)}}^{T}+\Psi^{-1}(x^{(i)}-\mu){z^{(i)}}^{T}\right] \\
+\end{eqnarray}
+$$</code></p>
+
+<p>令其得 0 ，可以得到：</p>
+
+<p><code>$$\sum_{i=1}^{m}\Lambda\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[z^{(i)}{z^{(i)}}^{T}\right]
+=\sum_{i=1}^{m}(x^{(i)}-\mu)\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[{z^{(i)}}^{T}\right]$$</code></p>
+
+<p>求解 <code>$\Lambda$</code> 有：</p>
+
+<p><code>$$
+\Lambda = 
+\left(\sum_{i=1}^{m}(x^{(i)}-\mu)\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[{z^{(i)}}^{T}\right]\right)
+\left(\sum_{i=1}^{m}\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[z^{(i)}{z^{(i)}}^{T}\right]\right)^{-1} \tag{7}
+$$</code></p>
+
+<p>等式 (7) 中的期望值如下：</p>
+
+<p><code>$$
+\begin{eqnarray}
+\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[{z^{(i)}}^{T}\right] &amp;=&amp; \mu^{T}_{z^{(i)}|x^{(i)}} \\
+\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[z^{(i)}{z^{(i)}}^{T}\right] &amp;=&amp; \mu_{z^{(i)}|x^{(i)}}\mu^{T}_{z^{(i)}|x^{(i)}} + \Sigma_{z^{(i)}|x^{(i)}} \\
+\end{eqnarray}
+$$</code></p>
+
+<p><code>$\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[z^{(i)}{z^{(i)}}^{T}\right]$</code> 的值是由于协方差公式的定义 <code>$\mathbf{Cov}(Y)=\mathbf{E}[YY^{T}]-\mathbf{E}[Y]\mathbf{E}[Y]^{T}$</code> 得到的。将这些值代入等式 (7) 有：</p>
+
+<p><code>$$\Lambda = 
+\left(\sum_{i=1}^{m}(x^{(i)}-\mu)\mu^{T}_{z^{(i)}|x^{(i)}}\right)
+\left(\sum_{i=1}^{m}\mu_{z^{(i)}|x^{(i)}}\mu^{T}_{z^{(i)}|x^{(i)}} + \Sigma_{z^{(i)}|x^{(i)}}\right)^{-1}
+\tag{8}
+$$</code></p>
+
+<p>需要注意的就是在推导 M步骤 的时候，不能简单的看到是期望值就胡乱代入。例如 <code>$\mathbf{E}[zz^{T}]$</code> 的值和 <code>$\mathbf{E}[z]\mathbf{E}[z]^T$</code> 的值不是等价的。</p>
+
+<p>同样，也可以得到 M步骤 中 <code>$\mu$</code> 和 <code>$\Psi$</code> 的更新公式。对于 <code>$\mu$</code> 有：</p>
+
+<p><code>$$\mu=\frac{1}{m}\sum_{i=1}^{m}x^{(i)}$$</code></p>
+
+<p>由于均值 <code>$\mu$</code> 值不会变化，所以只要在开始时计算一次即可。<code>$\Psi$</code> 的值可通过计算：</p>
+
+<p><code>$$
+\Phi = \frac{1}{m}\sum_{i=1}^{m}
+x^{(i)}{x^{(i)}}^{T}-x^{(i)}\mu_{z^{(i)}|x^{(i)}}^{T}\Lambda^{T}
+-\Lambda\mu_{z^{(i)}|x^{(i)}}{x^{(i)}}^{T}
++\Lambda(\mu_{z^{(i)}|x^{(i)}}\mu_{z^{(i)}|x^{(i)}}^{T}+\Sigma_{z^{(i)}|x^{(i)}})\Lambda^{T}
+$$</code></p>
+
+<p>得到矩阵 <code>$\Phi$</code> ，然后令 <code>$\Psi_{ii}=\Phi_{ii}$</code> ，也就是说 <code>$\Psi$</code> 中对角线上的值都是 <code>$\Phi$</code> 中对角线上的值。</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

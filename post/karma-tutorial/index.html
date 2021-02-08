@@ -1,0 +1,570 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>Karma入门－JavaScript单元测试 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>Karma入门－JavaScript单元测试</h1>
+                    <h2 class="headline">
+                    July 29, 2016 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/javascript">JavaScript</a>
+                        
+                            <a href="https://knightf.coding.me/tags/karma">Karma</a>
+                        
+                            <a href="https://knightf.coding.me/tags/%E6%B5%8B%E8%AF%95">测试</a>
+                        
+                            <a href="https://knightf.coding.me/tags/%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83">开发环境</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<p><a href="http://www.bradoncode.com/blog/2015/02/27/karma-tutorial/">阅读原文</a></p>
+
+<h2 id="什么是-karma">什么是 Karma ?</h2>
+
+<p>Karma 是一个可以通过命令行在真正的浏览器上运行源代码的工具。它之所以强大，是因为它可以在真的浏览器中运行代码，而不是在虚拟的 DOM 中运行。DOM 在不同浏览器上的实现都不一样，所以能用真的浏览器可以保证测试是有效的。</p>
+
+<p>你可以从<a href="http://karma-runner.github.io/0.12/index.html"> Karma 官网</a>上找到更多的细节和文档。我发现安装完成之后还是需要有基础知识才能使用的。我曾经从头到位地使用过所以在这里总结一下。</p>
+
+<p>这篇文章记述了安装过程，介绍了怎么配置初始化和我给出的一些自定义安装内容。在 Github 上有这个 <a href="https://github.com/bbraithwaite/karma-seed">karma-seed</a> 项目。</p>
+
+<h2 id="安装">安装</h2>
+
+<p>需要安装 <a href="http://nodejs.org/">Node.js</a> ，因为 Karma 在上面运行。</p>
+
+<p>想要更细致地安装 Karma ，可以看这个<a href="http://karma-runner.github.io/0.12/intro/installation.html">官方的文档</a>。</p>
+
+<p>不想费劲的话，可以下直接下载 <code>package.json</code> 。</p>
+
+<pre><code class="language-bash">curl -O https://gist.githubusercontent.com/bbraithwaite/7432f64ea45e028eb23c/raw/2a6e23cee09e7737c30cc790393a9b273070fbcb/package.json
+</code></pre>
+
+<p>或者直接把下面的内容粘贴进 <code>package.json</code> 里面：</p>
+
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;karma-seed&quot;,
+  &quot;version&quot;: &quot;1.0.0&quot;,
+  &quot;description&quot;: &quot;&quot;,
+  &quot;scripts&quot;: {
+    &quot;test&quot;: &quot;./node_modules/karma/bin/karma start karma.conf.js&quot;
+  },
+  &quot;devDependencies&quot;: {
+    &quot;jasmine-core&quot;: &quot;^2.2.0&quot;,
+    &quot;karma&quot;: &quot;^0.12.31&quot;,
+    &quot;karma-chrome-launcher&quot;: &quot;^0.1.7&quot;,
+    &quot;karma-jasmine&quot;: &quot;^0.3.5&quot;
+  }
+}
+</code></pre>
+
+<p>然后执行：</p>
+
+<pre><code class="language-bash">npm install
+</code></pre>
+
+<p>完成之后，输入下面的命令检查一下结果：</p>
+
+<pre><code class="language-bash">./node_modules/karma/bin/karma start
+</code></pre>
+
+<p>如果都没问题的话，控制台应该输出下面这样的东西：</p>
+
+<pre><code>INFO [karma]: Karma v0.12.31 server started at http://localhost:9876/
+</code></pre>
+
+<h2 id="配置">配置</h2>
+
+<p>接下来需要给 Karma 添加一些配置。为了规范化这个过程，运行下面的命令并且一直接受默认值：</p>
+
+<pre><code class="language-bash">./node_modules/karma/bin/karma init
+</code></pre>
+
+<p>在项目根目录会创建一个叫 <code>karma.conf.js</code> 的文件。如果你想要了解这些属性，可以看一下<a href="http://karma-runner.github.io/0.12/config/configuration-file.html">配置文档</a>。</p>
+
+<p>想要让测试可以通过 <code>npm test</code> 这样的命令执行，需要改一下 <code>package.json</code> 文件。把 <code>package.json</code> 里面的：</p>
+
+<pre><code class="language-json">&quot;scripts&quot;: {
+  &quot;test&quot;: &quot;echo \&quot;Error: no test specified\&quot; &amp;&amp; exit 1&quot;
+}
+</code></pre>
+
+<p>换成：</p>
+
+<pre><code class="language-json">&quot;scripts&quot;: {
+  &quot;test&quot;: &quot;./node_modules/karma/bin/karma start karma.conf.js&quot;
+}
+</code></pre>
+
+<blockquote>
+<p>使用 <code>npm test</code> 来作为测试的入口是我个人的偏好。这样不管我用什么样的工具做测试，我都可以用同样的命令执行。</p>
+</blockquote>
+
+<p>Karma 文档里提到还可以安装 <code>karma-cli</code> 来省去 <code>./node_modules/karma/bin/karma start</code> 这样的麻烦。如果你想装的话：</p>
+
+<pre><code class="language-bash">npm install -g karma-cli
+</code></pre>
+
+<p>如果 <code>karma-cli</code> 装好了，那么 <code>package.json</code> 里面的内容就要更新一下：</p>
+
+<pre><code class="language-json">&quot;scripts&quot;: {
+  &quot;test&quot;: &quot;karma start karma.conf.js&quot;
+}
+</code></pre>
+
+<h2 id="添加测试">添加测试</h2>
+
+<p>我看到的大多数例子都是默认在用 AngularJS 。考虑到我们是纯净安装所以就不用这些框架出场了。作为一个简单的例子我们要测试一个应用，它在单击按钮的时候把两个数加起来并显示出来。HTML 是这样的：</p>
+
+<pre><code class="language-html">&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;Magic Calculator&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;input id=&quot;x&quot; type=&quot;text&quot;&gt;
+    &lt;input id=&quot;y&quot; type=&quot;text&quot;&gt;
+    &lt;input id=&quot;add&quot; type=&quot;button&quot; value=&quot;Add Numbers&quot;&gt;
+    Result: &lt;span id=&quot;result&quot; /&gt;
+    &lt;script type=&quot;text/javascript&quot; src=&quot;lib/calculator.js&quot;&gt;&lt;/script&gt;
+    &lt;script&gt;
+      calculator.init();
+    &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>创建两个新文件：</p>
+
+<ul>
+<li>lib/calculator.js</li>
+<li>test/calculator.test.js</li>
+</ul>
+
+<p>然后先把这些粘贴进 <code>test/calculator.test.js</code> ：</p>
+
+<pre><code class="language-javascript">describe('Calculator', function() {
+
+  it('should add numbers');
+
+});
+</code></pre>
+
+<p>现在执行 <code>npm test</code> 的话是不会检测到这个新的测试的。我们需要修改配置文件让 Karma 知道这些新的文件的存在。更新 <code>karma.conf.js</code> ：</p>
+
+<pre><code class="language-javascript">  // list of files / patterns to load in the browser
+  files: [
+    'lib/*.js',
+    'test/*.js'
+  ],
+</code></pre>
+
+<p>现在再执行 <code>npm test</code> 的话控制台就会输出类似下面的东西了：</p>
+
+<pre><code>INFO [karma]: Karma v0.12.31 server started at http://localhost:9876/
+INFO [launcher]: Starting browser Chrome
+INFO [Chrome 40.0.2214 (Mac OS X 10.10.2)]: Connected on socket bDMxeU51miCD4wNe3 with id 34236680
+Chrome 40.0.2214 (Mac OS X 10.10.2): Executed 0 of 1 (skipped 1) ERROR (0.004 secs / 0 secs)
+</code></pre>
+
+<p>使用 Chrome 这样的浏览器执行测试还有一个好处就是访问输出的 URL 的时候，浏览器自带了调试的功能。下面我们就给测试文件添加一些有意义的内容：</p>
+
+<pre><code class="language-javascript">/*
+ * Unit tests for lib/calculator.js
+ */
+
+describe('Calculator', function() {
+
+  // inject the HTML fixture for the tests
+  beforeEach(function() {
+    var fixture = '&lt;div id=&quot;fixture&quot;&gt;&lt;input id=&quot;x&quot; type=&quot;text&quot;&gt;' + 
+      '&lt;input id=&quot;y&quot; type=&quot;text&quot;&gt;' + 
+      '&lt;input id=&quot;add&quot; type=&quot;button&quot; value=&quot;Add Numbers&quot;&gt;' +
+      'Result: &lt;span id=&quot;result&quot; /&gt;&lt;/div&gt;';
+
+    document.body.insertAdjacentHTML(
+      'afterbegin', 
+      fixture);
+  });
+
+  // remove the html fixture from the DOM
+  afterEach(function() {
+    document.body.removeChild(document.getElementById('fixture'));
+  });
+
+  // call the init function of calculator to register DOM elements
+  beforeEach(function() {
+    window.calculator.init();
+  });
+
+  it('should return 3 for 1 + 2', function() {
+    document.getElementById('x').value = 1;
+    document.getElementById('y').value = 2;
+    document.getElementById('add').click();
+    expect(document.getElementById('result').innerHTML).toBe('3');
+  });
+
+  it('should calculate zero for invalid x value', function() {
+    document.getElementById('x').value = 'hello';
+    document.getElementById('y').value = 2;
+    document.getElementById('add').click();
+    expect(document.getElementById('result').innerHTML).toBe('0');
+  });
+
+  it('should calculate zero for invalid y value', function() {
+    document.getElementById('x').value = 1;
+    document.getElementById('y').value = 'goodbye';
+    document.getElementById('add').click();
+    expect(document.getElementById('result').innerHTML).toBe('0');
+  });
+
+});
+</code></pre>
+
+<p>这个文件里的重点：</p>
+
+<ul>
+<li>测试文件用到的 HTML 是在浏览器里注入的。</li>
+<li>DOM 元素可以通过和浏览器一样的方式访问到。</li>
+</ul>
+
+<p>接下来加上基础的计算逻辑，把下面的内容粘贴进 <code>lib/calculator.js</code> 里面：</p>
+
+<pre><code class="language-javascript">window.calculator = window.calculator || {};
+
+(function() {
+  var calculate = function() {
+    var x = document.getElementById('x').value;
+    var y = document.getElementById('y').value;
+    document.getElementById('result').innerHTML = x + y;
+  };
+
+  window.calculator.init = function() {
+    document.getElementById('add').addEventListener('click', calculate);
+  };
+})();
+</code></pre>
+
+<p>我在里面留了一些 bug 好让测试失败。现在运行 <code>npm test</code> 就会出现测试未通过的信息。Karma 具有监听的功能，如果这些文件被改动后不需要再次运行 <code>npm test</code> ，它会自动重启测试。</p>
+
+<p>那现在把 bug 去掉，<code>calculator.js</code> 应该长这样：</p>
+
+<pre><code class="language-javascript">'use strict';
+
+window.calculator = window.calculator || {};
+
+(function() {
+  var getIntById = function(id) {
+    return parseInt(document.getElementById(id).value, 10);
+  };
+
+  var calculate = function() {
+    var sum = getIntById('x') + getIntById('y');
+    document.getElementById('result').innerHTML = isNaN(sum) ? 0 : sum;
+  };
+
+  window.calculator.init = function() {
+    document.getElementById('add').addEventListener('click', calculate);
+  };
+})();
+</code></pre>
+
+<p>现在测试就应该通过了：</p>
+
+<pre><code>INFO [karma]: Karma v0.12.31 server started at http://localhost:9876/
+INFO [launcher]: Starting browser PhantomJS
+INFO [PhantomJS 1.9.8 (Mac OS X)]: Connected on socket WE5_e1Pp_f3CI1Zmm4tw with id 82088536
+PhantomJS 1.9.8 (Mac OS X): Executed 3 of 3 SUCCESS (0.016 secs / 0.001 secs)
+</code></pre>
+
+<h2 id="可选配置">可选配置</h2>
+
+<p>以前我做的项目里曾经做过这些配置：</p>
+
+<h3 id="使用-mocha-和-should">使用 Mocha 和 Should</h3>
+
+<p>如果你之前写过 Node.js 的单元测试你很可能会用到 Mocha。我偏好用 Mocha 和 Should 风格的断言。刚才默认的安装我们用了 Jasmine，但是如果你想用 Mocha 的话改起来非常容易。</p>
+
+<p>安装，并且把 Jasmine 从 <code>package.json</code> 里面删掉：</p>
+
+<pre><code class="language-bash">npm install karma-mocha --save-dev
+npm install karma-chai --save-dev
+</code></pre>
+
+<p>更新 <code>karma.conf.js</code> ：</p>
+
+<pre><code class="language-javascript">  frameworks: ['mocha', 'chai'],
+</code></pre>
+
+<p>现在我们就能用这种格式写断言了：</p>
+
+<pre><code class="language-javascript">1.should.equal(2);
+</code></pre>
+
+<h3 id="使用无头浏览器">使用无头浏览器</h3>
+
+<p>如果测试多了，再用多种浏览器测试会变的很慢。我有的时候并不需要把代码在每种浏览器里都测一遍，所以为了速度我会用无头浏览器 <a href="http://www.bradoncode.com/blog/2015/02/27/karma-tutorial/phantomjs.org">PhantomJS</a>。然后等到最后代码成型的时候再在每种浏览器里测试。</p>
+
+<p>安装 PhantomJS 的话：</p>
+
+<pre><code class="language-bash">npm install karma-phantomjs-launcher --save-dev
+</code></pre>
+
+<p>那么在 <code>karma.conf.js</code> 里面就要这样改：</p>
+
+<pre><code class="language-javascript">  browsers: ['PhantomJS'],
+</code></pre>
+
+<h3 id="设置测试覆盖范围">设置测试覆盖范围</h3>
+
+<p>有时我会需要测试覆盖范围的报告。这可以用 <a href="http://gotwarlost.github.io/istanbul/">Istanbul</a> 来实现。</p>
+
+<p>启用覆盖范围报告，安装：</p>
+
+<pre><code class="language-bash">npm install karma-coverage --save-dev
+</code></pre>
+
+<p>在 <code>karma.conf.js</code> 里面，设置这些属性：</p>
+
+<pre><code class="language-javascript">  preprocessors: {
+    'lib/*.js': 'coverage'
+  },
+  reporters: ['progress', 'coverage'],
+</code></pre>
+
+<p>当运行测试的时候，会创建一个新的 <code>coverage</code> 文件夹。打开里面的 <code>index.html</code> 就可以看到报告。</p>
+
+<h3 id="设置测试配置文件">设置测试配置文件</h3>
+
+<p>我工作时总是希望能够简单的在不同的测试目标中切换。当做小的改动的时候我希望用 PhantomJS 快速的测试而且不需要覆盖范围之类的东西。但当我完成一个功能的时候希望能够全面的测试。</p>
+
+<p>我通过设置环境变量实现这样的切换，在 <code>package.json</code> 中：</p>
+
+<pre><code class="language-json">&quot;scripts&quot;: {
+  &quot;test&quot;: &quot;karma start karma.conf.js&quot;,
+  &quot;full-test&quot;: &quot;NODE_ENV=test karma start karma.conf.js&quot;
+}
+</code></pre>
+
+<p>如果我执行 <code>npm run full-test</code> 就是全面的跨浏览器测试，包括覆盖范围报告。</p>
+
+<h3 id="处理-html-片段">处理 HTML 片段</h3>
+
+<p>在上面的内容里 HTML 代码是通过 JavaScript 注入进去的。当测试变多的时候，插入这些代码就变得累人了。有很多插件可以解决这个问题，我用的是 <a href="https://github.com/billtrik/karma-fixture">karma-fixture</a>。</p>
+
+<p>把 HTML 片段存进文件里然后在测试里就可以这样引用：</p>
+
+<pre><code class="language-javascript"> beforeEach(function() {
+    fixture.load('calculator.fixture.html');
+ });
+ ~~~
+
+See an [example test here](https://github.com/bbraithwaite/karma-seed/blob/master/test/calculator.test.js).
+
+### Keep DOM accessor code out of Tests
+
+This is a personal preference concerning style. The test example given previously had code to find elements in the test method e.g. _document.getElementById_. This additional detail can muddy the tests making them less readable.
+
+~~~javascript
+it('should return 3 for 1 + 2', function() {
+  document.getElementById('x').value = 1;
+  document.getElementById('y').value = 2;
+  document.getElementById('add').click();
+  expect(document.getElementById('result').innerHTML).toBe('3');
+});
+</code></pre>
+
+<h2 id="seed-项目">Seed 项目</h2>
+
+<p>包含上面所有内容的项目在这里：<a href="https://github.com/bbraithwaite/karma-seed">https://github.com/bbraithwaite/karma-seed</a></p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

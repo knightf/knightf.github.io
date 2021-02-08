@@ -1,0 +1,352 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>JavaScript函数式开发概念：Curry代码 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>JavaScript函数式开发概念：Curry代码</h1>
+                    <h2 class="headline">
+                    June 13, 2016 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/javascript">JavaScript</a>
+                        
+                            <a href="https://knightf.coding.me/tags/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B">函数式编程</a>
+                        
+                            <a href="https://knightf.coding.me/tags/curry%E5%87%BD%E6%95%B0">Curry函数</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<p><a href="https://blog.simpleblend.net/functional-javascript-concepts-currying/">阅读原文</a></p>
+
+<p>在我搞懂Curry代码之前，听到别的程序员说起它我总是很紧张。每次他们一讲这个就好像一块不详的雷雨云袭来，感觉这个概念很难懂。但我可以向你保证程序圈里的Curry，一点都不难懂，而且很简单就可以掌握，打开了通向强大的函数式编程大门。</p>
+
+<h1 id="核心概念">核心概念</h1>
+
+<p>我们先来看看<a href="https://twitter.com/drboolean">Brian Lonsdorf</a>写的一本很棒的书：<a href="https://drboolean.gitbooks.io/mostly-adequate-guide/content/">Mostly Adequate Guide to Functional Programming</a>里面是怎么说的：</p>
+
+<blockquote>
+<p>概念很简单：你可以用比一个函数所需要的形参数量更少的形参来调用它。它会返回一个函数，接收剩下的形参。</p>
+</blockquote>
+
+<p>换言之，一个curry函数随着时间变化接收并提供额外的形参。它通过返回另一个函数来实现这个功能。为了看看这是怎么实现的，我们来把一个函数curry化。</p>
+
+<pre><code class="language-javascript">var add = function(x, y) {
+  return x + y;
+}
+
+add(10, 20); // 30
+</code></pre>
+
+<p>现在我们又一个叫 <code>sum</code> 的函数可以把两个数字加起来。简单。我们curry一下它。</p>
+
+<pre><code class="language-javascript">var add = function(x) {
+  return function(y) {
+    return x + y;
+  }
+}
+
+var addFifty = add(50);
+
+addFifty(10); // 60
+</code></pre>
+
+<p>我们返回了一个变量 <code>x</code> 的闭包函数，并没有直接返回结果。这样可以让我们在之后执行 <code>addFifty</code> 的时候依然可以有对 <code>x</code> 的引用。最后我们得到的这个函数给我们算了两个数字的和。我们可以说这个例子里面的函数就是curry化的了。</p>
+
+<h1 id="为什么curry化">为什么Curry化？</h1>
+
+<p>Curry函数在很多意义上都有帮助。从函数式编程的角度来看，它可以让你的程序用上更多的纯函数。我之后会写更多有关纯函数的文章但现在简单地说，纯函数会让你的程序更好的被你和你的同事看懂。</p>
+
+<p>另一个原因可以用这个更贴切一点的例子说明。虽然两个数相加可以很好地解释概念，但是不能突出它在更大的应用中带来的好处。现在我们就来看看。</p>
+
+<p>假设我们正在处理下面这个有关动物的列表：</p>
+
+<pre><code class="language-javascript">const animals = [
+  {
+    id: 1,
+    name: &quot;Tails&quot;,
+    type: &quot;Cat&quot;,
+    adoptable: false
+  },
+  {
+    id: 2,
+    name: &quot;Soul&quot;,
+    type: &quot;Cat&quot;,
+    adoptable: true
+  },
+  {
+    id: 3,
+    name: &quot;Fred&quot;,
+    type: &quot;Dog&quot;,
+    adoptable: true
+  },
+  {
+    id: 4,
+    name: &quot;Fury&quot;,
+    type: &quot;Lion&quot;,
+    adoptable: true
+  }
+];
+</code></pre>
+
+<p>我们需要一个方法来基于 <code>type</code> 过滤掉不需要的动物。我们可以这么写：</p>
+
+<pre><code class="language-javascript">animals.filter(animal =&gt;
+   animal.type === &quot;Cat&quot;;
+);
+
+/*
+[{
+   adoptable: false,
+   id: 1,
+   name: &quot;Tails&quot;,
+   type: &quot;Cat&quot;
+ },
+ {
+   adoptable: true,
+   id: 2,
+   name: &quot;Soul&quot;,
+   type: &quot;Cat&quot;
+ }];
+*/
+</code></pre>
+
+<p>看着不错，这样我们就把所有猫都找到了。但达到同样的目的可以有一种更好的写法。</p>
+
+<p>上面代码中最大的劣势就是 <code>type</code> 这个动物的属性被紧密的与 <em>过滤这个行为</em> 绑定到了一起。这样降低了重用性，而且助长了我们最糟糕的敌人——状态——的气焰。</p>
+
+<p>我们来看看能不能写得更好一点：</p>
+
+<pre><code class="language-javascript">const isAnimal = 
+   type =&gt; 
+     animal =&gt;
+       animal.type === type;
+
+animals.filter(isAnimal(&quot;Cat&quot;));
+ 
+/*
+ [{
+   adoptable: false,
+   id: 1,
+   name: &quot;Tails&quot;,
+   type: &quot;Cat&quot;
+ },
+ {
+   adoptable: true,
+   id: 2,
+   name: &quot;Soul&quot;,
+   type: &quot;Cat&quot;
+ }];
+ */
+</code></pre>
+
+<p>简洁多了。我们一步步看：</p>
+
+<ol>
+<li><code>isAnimal</code> 接收一个形参，类型</li>
+<li>然后 <code>isAnimal</code> 返回一个新的函数</li>
+<li>返回的函数用来做 <code>.filter()</code> 函数的回调</li>
+<li>闭包让我们返回的新函数可以访问 <code>type</code> 变量，最后让我们可以执行比较语句</li>
+</ol>
+
+<p>那么为什么它比上一个例子好呢？当应用越来越大的时候，就更难理解函数都是作什么的，他们从哪儿来。尽量多写纯函数可以杜绝对状态的追溯，而且让我们的整个应用能更好地分成单独的部分测试。</p>
+
+<h1 id="结论-资源">结论&amp;资源</h1>
+
+<p>我希望这篇文章可以让你看到curry函数背后强大的原理。我个人认为他们非常有用，并且让我学习了更多的有关函数式编程的理念。</p>
+
+<p>如果你想要阅读更多有关的内容，我建议你可以看看这些函数式库，像是<a href="http://ramdajs.com/0.21.0/docs/#curry">Ramda.js</a>和<a href="https://lodash.com/docs#curry">lodash</a>，这些库里有广义上的curry函数可以让我们得到激动人心的函数式功能。</p>
+
+<p>最后，祝您身体健康！</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

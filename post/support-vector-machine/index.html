@@ -1,0 +1,424 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>机器学习 第五章 支持向量机 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>机器学习 第五章 支持向量机</h1>
+                    <h2 class="headline">
+                    March 10, 2017 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/machine-learning">Machine Learning</a>
+                        
+                            <a href="https://knightf.coding.me/tags/stanford-cs229">Stanford CS229</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<h1 id="边界">边界</h1>
+
+<p>在逻辑回归中，如果预测结果是 <code>$y=0$</code> 并且 <code>$\theta^{T}x$</code> 远远小于 0 ，我们可以说这次预测是很可信的。反过来如果 <code>$y=1$</code> 而且 <code>$\theta^{T}x$</code> 远远大于 0 ，那么也可以说这个预测是很可信的。</p>
+
+<p>如果我们用这种思路来设计机器学习模型的话，也是有理可循的。假如，我们构建了一个可以把样本分成两类的超平面，样本里有 3 个点 A 、 B 和 C 。这三个点都在超平面的一侧，被这超平面分为一类。点 A 离超平面最远，我们就觉得对 A 作出的分类预测是很可信的；点 C 离超平面最近，我们就觉得 C 是边界上的样本。所以我们认为如果我们有一个数据集，并且能够找到一个超平面离数据集里的点都有一定距离，就可以很好的分类了。</p>
+
+<h1 id="符号">符号</h1>
+
+<p>现在我们用 -1 和 1 来表示数据集中的两类结果，用参数 <code>$w$</code> ， <code>$b$</code> 来表示我们的分类器：</p>
+
+<p><code>$$h_{w,b}(x)=g(w^{T}x+b)$$</code></p>
+
+<p>这里如果 <code>$z\geq0$</code> ， <code>$g(z)=1$</code> ，其他情况 <code>$g(z)=-1$</code> 。需要注意的是，这里我们直接计算了结果是 1 还是 -1 ，不再经过似然函数之类的中间过程了。</p>
+
+<h1 id="函数距离和几何距离">函数距离和几何距离</h1>
+
+<p>给定样本 <code>$(x^{(i)},y^{(i)})$</code> ，定义它的 <code>函数距离</code> 为：</p>
+
+<p><code>$$\hat{\gamma}^{(i)}=y^{(i)}(w^{T}x+b)$$</code></p>
+
+<p>从我们刚才的思路出发，距离应该越大越好。如果 <code>$y^{(i)}=1$</code> ，那么 <code>$w^{T}x+b$</code> 应该是一个很大的正数；如果 <code>$y^{(i)}=-1$</code> ，那么 <code>$w^{T}x+b$</code> 应该是一个很大的负数。只有符合这样规律的 <code>$w^{T}x+b$</code> 才符合我们的预期。但是这个定义有一点不好的地方在于，如果我们调整 <code>$w$</code> 和 <code>$b$</code> 的值， <code>$h_{w,b}(x)$</code> 的输出不会改变，但是我们刚才定义的函数距离的数值却会变化，影响我们对实际距离的判断。</p>
+
+<p>所以我们定义 <code>几何距离</code> ：</p>
+
+<p><code>$$\gamma^{(i)}=y^{(i)}((\frac{w}{||w||})^{T}x^{(i)}+\frac{b}{||w||})$$</code></p>
+
+<p>这里 <code>$w$</code> 和 <code>$b$</code> 都除以 <code>$||w||$</code> ，所以如果我们再改变 <code>$w$</code> 和 <code>$b$</code> 的比例，几何距离是不会改变的。所以当拟合 <code>$w$</code> 和 <code>$b$</code> 时，就可以人为地设定一些有关比例的限制。我们定义一个训练集的几何距离是所有样本的几何距离中最小的一个：</p>
+
+<p><code>$$\gamma=\min_{i=1,...,m}\gamma^{(i)}$$</code></p>
+
+<h1 id="拉格朗日对偶问题">拉格朗日对偶问题</h1>
+
+<p><code>中略</code></p>
+
+<h1 id="最优距离分类器">最优距离分类器</h1>
+
+<p>先只考虑样本空间是可以被超平面划分的情况。有以下的优化问题：</p>
+
+<p><code>$$\begin{eqnarray}
+\min_{\gamma,w,b} &amp;&amp; \frac{1}{2}{||w||}^2 \\
+s.t. &amp;&amp; y^{(i)}(w^{T}x^{(i)}+b)\geq1, i=1,...,m
+\end{eqnarray}$$</code></p>
+
+<p>上面的优化问题有一个中凸二次目标方程和线性约束。它的解就是一个 <code>最优距离分类器</code> 。这个优化问题已经可以用现有的代码解决了，但我们还是要用拉格朗日对偶问题将表达式求出，会发现一些有趣的现象。</p>
+
+<p>以上面的优化问题为拉格朗日对偶问题中的原问题，我们可以得到限制条件为：</p>
+
+<p><code>$$g_{i}(w)=-y^{(i)}(w^{T}x^{(i)}+b)+1\leq0$$</code></p>
+
+<p>由 KKT 对偶补充条件我们可以知道，只有样本的函数距离等于 1 时才有 <code>$\alpha_i\geq0$</code> 。所以只有离分割的超平面最近的点所代表的样本， <code>$\alpha_i$</code> 才是非零的值。而这些点，就叫做 <code>支持向量</code> (support vector) 。构建该问题的拉格朗日算子得到：</p>
+
+<p><code>$$\mathcal{L}(w,b,\alpha)=\frac{1}{2}{||w||}^2-\sum_{i=1}^m{a_i[y^{(i)}(w^{T}x^{(i)}+b)-1]}$$</code></p>
+
+<p>接下来写出该问题的对偶形式。先以 <code>$w$</code> 和 <code>$b$</code> 为参数最小化 <code>$\mathcal{L}(w,b,\alpha)$</code> 以得到 <code>$\theta_{\mathcal{D}}$</code> 。令 <code>$\mathcal{L}$</code> 对 <code>$w$</code> 和 <code>$b$</code> 的偏导数等于 0 得到：</p>
+
+<p><code>$$\begin{eqnarray}
+\nabla_{w}\mathcal{L}(w,b,\alpha) &amp;=&amp; w-\sum_{i=1}^m{\alpha_{i}y^{(i)}x^{(i)}}=0 \\
+w &amp;=&amp; \sum_{i=1}^m{\alpha_{i}y^{(i)}x^{(i)}} \\
+\frac{\partial}{\partial{b}}\mathcal{L}(w,b,\alpha) &amp;=&amp; \sum_{i=1}^m{\alpha_{i}y^{(i)}} = 0
+\end{eqnarray}$$</code></p>
+
+<p>我们应用上面的式子，可以得到：</p>
+
+<p><code>$$\begin{eqnarray}
+\mathcal{L}(w,b,\alpha) &amp;=&amp; \sum_{i=1}^m{\alpha_i}-\frac{1}{2}\sum_{i,j=1}^m{y^{(i)}y^{(j)}\alpha_{i}\alpha_{j}(x^{(i)})^{T}x^{(j)}}-b\sum_{i=1}^m{\alpha_{i}y^{(i)}} \\
+&amp;=&amp; \sum_{i=1}^m{\alpha_i}-\frac{1}{2}\sum_{i,j=1}^m{y^{(i)}y^{(j)}\alpha_{i}\alpha_{j}(x^{(i)})^{T}x^{(j)}}
+\end{eqnarray}$$</code></p>
+
+<p>那么再加上一个一直是隐性的约束条件 <code>$\alpha_i\geq0$</code> ，我们就可以写出下面的对偶优化问题：</p>
+
+<p><code>$$\begin{eqnarray}
+\max_{\alpha} &amp;&amp; W(\alpha)=\sum_{i=1}^m{\alpha_i}-\frac{1}{2}\sum_{i,j=1}^m{y^{(i)}y^{(j)}\alpha_i\alpha_j\langle{x^{(i)},x^{(j)}}\rangle} \\
+s.t. &amp;&amp; \alpha_i\geq0, i=1,...,m \\
+&amp;&amp; \sum_{i=1}^m{\alpha_{i}y^{(i)}}=0
+\end{eqnarray}$$</code></p>
+
+<p>这样我们不用再去解决原始问题而直接考虑这个对偶问题就好了。如果我们能通过某种算法（稍后谈到）求解到 <code>$\alpha$</code> 的值，那么就有：</p>
+
+<p><code>$$\begin{eqnarray}
+w^* &amp;=&amp; \sum_{i=1}^{m}{\alpha_{i}y^{(i)}x^{(i)}} \\
+b^* &amp;=&amp; -\frac{\max_{i:y^{(i)}=-1}{w^{*}}^{T}x^{(i)}+\min_{i:y^{(i)}=1}{w^{*}}^{T}x^{(i)}}{2}
+\end{eqnarray}$$</code></p>
+
+<p>所以如果我们把 <code>$w$</code> 的最优解带回 <code>$w^{T}x+b$</code> 我们发现：</p>
+
+<p><code>$$\begin{eqnarray}
+w^{T}x+b &amp;=&amp; (\sum_{i=1}^{m}{\alpha_{i}y^{(i)}x^{(i)}})^{T}x+b \\
+&amp;=&amp; \sum_{i=1}^{m}{\alpha_{i}y^{(i)}\langle{x^{(i)},x}\rangle}+b
+\end{eqnarray}$$</code></p>
+
+<p>可以发现，做预测时需要计算的数量只依赖于输入的样本 <code>$x$</code> 和训练集中样本的内积。进一步，由于非支持向量的 <code>$\alpha_i$</code> 的值都是 0 ，所以最后计算的时候，我们只需要对那些支持向量的内积进行求和就可以了。</p>
+
+<h1 id="核">核</h1>
+
+<p>现在我们把样本原始包含的各种内容起个名字叫做 <code>属性</code> (attribute) ，把可以直接输入给学习算法的、经过映射处理的样本原始内容叫做 <code>特征</code> (feature) 。我们用符号 <code>$\phi$</code> 代表 <code>特征映射</code> (feature mapping) 的过程。所以按照 SVM 中的内积格式，它对应的 <code>核</code> (kernel) 为：</p>
+
+<p><code>$$K(x,z)=\phi(x)^{T}\phi(z)$$</code></p>
+
+<p>这样之前算法中凡是出现 <code>$\langle{x, z}\rangle$</code> 的地方我们都可以用 <code>$K(x,z)$</code> 替换掉。现在考虑成本问题，如果 <code>$\phi(x)$</code> 是维度非常高的向量，那么它的计算会非常耗时间。观察 <code>$\phi(x)$</code> 和 <code>$\phi(z)$</code> ，如果它们很近，那么它们的内积会很大；如果它们很远，比如近乎垂直，那么它们的内积很小。所以现在 <code>$K(x,z)$</code> 可以被看作是一个衡量 <code>$x$</code> 和 <code>$z$</code> 相似程度的函数。那么如果我们选择一个可以衡量这个程度的函数：</p>
+
+<p><code>$$K(z,x)=\exp{(-\frac{{||x-z||}^2}{2\sigma^{2}})}$$</code></p>
+
+<p>那么这个核是不是能用在 SVM 中呢？回答是肯定的，这是 <code>高斯核</code> (gaussian kernel) ，而且它对应的 <code>$\phi$</code> 是无限维度的。我们先提出一个 <code>核矩阵</code> (kernel matrix) 的概念。对于有 <code>$m$</code> 个点的有限集合 <code>$\{x^{(i)},...,x^{(m)}\}$</code> ，定义一个 m 阶的矩阵 <code>$K_{m}$</code> ，它有 <code>${(K_m)}_{ij}=K(x^{(i)},x^{(j)})$</code> 。</p>
+
+<p>有 <code>Mercer 定理</code> ：<code>$K$</code> 对于一个有限点集是一个有效的核的充要条件，是它对应的核矩阵是一个对称半正定矩阵。</p>
+
+<h1 id="广义化和不可分的情况">广义化和不可分的情况</h1>
+
+<p>为了解决样本空间不可分时的问题，我们改写我们的优化问题如下：</p>
+
+<p><code>$$\begin{eqnarray}
+\min_{\gamma,w,b} &amp;&amp; \frac{1}{2}{||w||}^2+C\sum_{i=1}^{m}\xi_{i} \\
+s.t. &amp;&amp; y^{(i)}(w^{T}x^{(i)}+b)\geq{1-\xi_{i}},i=1,...,m \\
+&amp;&amp; \xi_{i}\geq{0},i=1,...,m
+\end{eqnarray}$$</code></p>
+
+<p>现在允许样本的函数距离小于 1 了，只不过小于 1 会导致目标函数的值变大。参数 <code>$C$</code> 控制了惩罚力度的大小。接下来和之前一样，我们把优化问题的拉格朗日算子构造出来：</p>
+
+<p><code>$$\begin{eqnarray}
+\mathcal{L}(w,b,\xi,\alpha,r) &amp;=&amp; \frac{1}{2}w^{T}w+C\sum_{i=1}^M{\xi_i} \\
+&amp;&amp; -\sum_{i=1}^m{\alpha_{i}[y^{(i)}(x^{T}w+b)-1+\xi_i]}-\sum_{i=1}^{m}r_i\xi_i
+\end{eqnarray}$$</code></p>
+
+<p>还是和之前一样，将对 <code>$w$</code> 和 <code>$b$</code> 的偏微分求出并设为 0 后，我们得到了关于 <code>$\alpha$</code> 的对偶问题：</p>
+
+<p><code>$$\begin{eqnarray}
+\max_{\alpha} &amp;&amp; W(\alpha)=\sum_{i=1}^{m}\alpha_i-\frac{1}{2}\sum_{i,j=1}^{m}y^{(i)}y^{(i)}\alpha_{i}\alpha_{j}\langle{x^{(i)},x^{(i)}}\rangle \\
+s.t. &amp;&amp; 0\leq{\alpha_i}\leq{C}, i=1,...,m \\
+&amp;&amp; \sum_{i=1}^{m}\alpha_{i}y^{(i)}=0
+\end{eqnarray}$$</code></p>
+
+<h1 id="smo-算法">SMO 算法</h1>
+
+<p>根据 KKT 对偶互补条件，我们可以用来测试算法是否收敛：</p>
+
+<p><code>$$\begin{eqnarray}
+\alpha_{i}=0 &amp;\Rightarrow&amp; y^{(i)}(w^{T}x^{(i)}+b)\geq1 \\
+\alpha_{i}=C &amp;\Rightarrow&amp; y^{(i)}(w^{T}x^{(i)}+b)\leq1 \\
+0&lt;\alpha_{i}&lt;C &amp;\Rightarrow&amp; y^{(i)}(w^{T}x^{(i)}+b)=1
+\end{eqnarray}$$</code></p>
+
+<h2 id="坐标上升">坐标上升</h2>
+
+<p>考虑简单的优化问题，比如没有约束条件的：</p>
+
+<p><code>$$\max_{\alpha}W(\alpha_1,\alpha_2,...,\alpha_m)$$</code></p>
+
+<p><code>坐标上升</code> (coordinate ascent) 这种算法大致的思路是这样的：</p>
+
+<pre><code>While (未收敛) {
+  For i = 1, ..., m, {
+    a(i) = 令 W 取最大值的 a(i) 的值
+  }
+}
+</code></pre>
+
+<p>核心的思想就是每次循环的时候，对 <code>$W$</code> 中的每一个 <code>$\alpha_i$</code> 都做更新，并且每次更新的时候都把其他的 <code>$\alpha$</code> 看作常数来优化 <code>$W$</code> 的值。</p>
+
+<h2 id="smo">SMO</h2>
+
+<p>下面是我们想要求的(对偶)优化问题：</p>
+
+<p><code>$$\begin{eqnarray}
+\max_{\alpha} &amp;&amp; W(\alpha)=\sum_{i=1}^{m}\alpha_{i}-\frac{1}{2}\sum_{i,j=1}^{m}y^{(i)}y^{(j)}\alpha_{i}\alpha_{j}\langle{x^{(i)},x^{(j)}}\rangle \\
+s.t. &amp;&amp; 0 \leq \alpha_{i} \leq C, i=1,...,m \\
+&amp;&amp; \sum_{i=1}^{m}\alpha_{i}y^{(i)}=0
+\end{eqnarray}$$</code></p>
+
+<p>我们遇到的第一个问题就是它不能直接应用刚才所说的坐标上升的算法。因为我们有约束条件 <code>$\sum_{i=1}^{m}\alpha_{i}y^{(i)}=0$</code> ，所以我们试图改变 <code>$\alpha_{1}$</code> 时，会有 <code>$\alpha_{1} = -y^{(1)}\sum_{i=2}^{m}\alpha_{i}y^{(i)}$</code> 约束我们无法做到。</p>
+
+<p>所以改变一个不可能，那么改变一对就可以了：</p>
+
+<pre><code>直到收敛 {
+  1. 选择一对 a 来做更新。
+  2. 以 a(i) 和 a(j) 为变量优化 W(a) ，固定其他 a 的值。
+}
+</code></pre>
+
+<p>这也就是 SMO (sequential minimal optimization) 算法的应用了。它的收敛可以用本章开头提到的 3 个方程来判断。</p>
+
+<p>那么具体算法是如何工作的呢？比如现在我们想要针对 <code>$\alpha_1$</code> 和 <code>$\alpha_2$</code> 优化 <code>$W(\alpha_1,\alpha_2,...,\alpha_m)$</code> ，有如下关系：</p>
+
+<p><code>$$\alpha_{1}y^{(1)}+\alpha_{2}y^{(2)}=-\sum_{i=3}^{m}\alpha_{i}y^{(i)}$$</code></p>
+
+<p>因为等式右边的值是一个常数，用 <code>$\zeta$</code> 简化等到一个二元一次方程：</p>
+
+<p><code>$$\alpha_{1}y^{(1)}+\alpha_{2}y^{(2)}=\zeta$$</code></p>
+
+<p>然后根据之前的约束条件有：</p>
+
+<p><code>$$
+0 \leq \alpha_{1} \leq C \\
+0 \leq \alpha_{2} \leq C
+$$</code></p>
+
+<p>所以空间中，刚才的二元一次方程就是一条直线，而之前的约束条件划出了一个正方形。所以我们可以找到满足所有约束条件的上界 <code>$H$</code> 和 下界 <code>$L$</code> 。接着通过二元一次方程可以得到：</p>
+
+<p><code>$$\alpha_{1}=(\zeta-\alpha_{2}y^{(2)})y^{(1)}$$</code></p>
+
+<p>接着代入 <code>$W(\alpha)$</code> 得到：</p>
+
+<p><code>$$W(\alpha_1,\alpha_2,...,\alpha_m)=W((\zeta-\alpha_{2}y^{(2)})y^{(1)},\alpha_2,...,\alpha_m)$$</code></p>
+
+<p>经过几步代数过程就可以发现现在 <code>$W(\alpha)$</code> 已经是一个形如 <code>$a\alpha_{2}^{2}+b\alpha_{2}+c$</code> 的简单二次方程了。通过使它的导数为 0 ，可以求出最优值 <code>$\alpha_{2}^{新的未验证的}$</code> 。接下来我们通过之前固定的上下界，验证它的合法性就可以了：</p>
+
+<p><code>$$
+\alpha_{2}^{新的}=
+\begin{cases}
+H, &amp; \text{if $\alpha_{2}^{新的未验证的}&gt;H$} \\
+\alpha_{2}^{新的未验证的}, &amp; \text{if $L \leq \alpha_{2}^{新的未验证的} \leq H$} \\
+L, &amp; \text{if $\alpha_{2}^{新的未验证的}&lt;L$}
+\end{cases}
+$$</code></p>
+
+<p>最后得到 <code>$\alpha_{2}^{新的}$</code> ，通过之前的二元一次方程就能计算出 <code>$\alpha_{1}^{新的}$</code> 了。</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

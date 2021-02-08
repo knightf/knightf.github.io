@@ -1,0 +1,356 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>机器学习 第一章 线性回归 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>机器学习 第一章 线性回归</h1>
+                    <h2 class="headline">
+                    February 17, 2017 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/machine-learning">Machine Learning</a>
+                        
+                            <a href="https://knightf.coding.me/tags/stanford-cs229">Stanford CS229</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<p>对于由 <code>$m$</code> 个 <code>$n$</code> 维的特征向量 <code>$x_n$</code> 构成的数据集，我们希望求得一个函数形如：</p>
+
+<p><code>$$h_\theta(x)=\theta_0+\theta_1x_1+\cdots+\theta_nx_n$$</code></p>
+
+<p>来反应特征向量 <code>$x_n$</code> 与其对应结果 <code>$y_n$</code> 的关系。</p>
+
+<p>为了简化我们的书写，默认 <code>$x_0=1$</code>，有👇式：</p>
+
+<p><code>$$h(x)=\sum_{i=0}^n\theta_ix_i=\theta^Tx$$</code></p>
+
+<p>可以看到 <code>$\theta$</code> 与 <code>$x$</code> 现在都是长度为 <code>$n+1$</code> 的向量。</p>
+
+<p>此处我们定义 <code>成本函数</code> (cost function) 如下：</p>
+
+<p><code>$$J(\theta)=\frac{1}{2}\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2$$</code></p>
+
+<h1 id="梯度下降">梯度下降</h1>
+
+<p>所以我们现在需要确定 <code>$\theta$</code> 的值来让 <code>$J(\theta)$</code> 取到最小值。采用梯度下降算法，不断更新 <code>$\theta$</code> 的值直到收敛：</p>
+
+<p><code>$$\theta_j:=\theta_j-\alpha\frac{\partial}{\partial\theta_j}J(\theta)$$</code></p>
+
+<p>此处 <code>$\alpha$</code> 被称作 <code>学习速率</code> 。把 <code>$J(\theta)$</code> 带入👆的式子并求解偏微分后得到更新 <code>$\theta$</code> 的规则如下：</p>
+
+<p><code>$$\theta_j:=\theta_j+\alpha(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$$</code></p>
+
+<p>这被称作 <code>LMS</code> (least mean squares) 更新规则。所以我们的算法就可以这样写：</p>
+
+<p><code>直到收敛 {</code></p>
+
+<p><code>对每一个 j</code></p>
+
+<p><code>$\theta_j:=\theta_j+\alpha\sum_{i=1}^m(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$</code></p>
+
+<p><code>}</code></p>
+
+<p>这种方法叫做 <code>批量梯度下降</code> (batch gradient descent) 。与之对应，还有一种方法是这样的：</p>
+
+<p><code>循环 {</code></p>
+
+<p><code>i 从 1 循环至 m</code></p>
+
+<p><code>对每一个 j</code></p>
+
+<p><code>$\theta_j:=\theta_j+\alpha(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$</code></p>
+
+<p><code>}</code></p>
+
+<p>可以看到这种方法每处理一条训练集中的样本时，我们只根据当前样本误差做了计算并更新。这种方法叫做 <code>随机梯度下降</code> (stochastic gradient descent) 。</p>
+
+<h1 id="常规方程">常规方程</h1>
+
+<p>除了采用梯度下降这种迭代算法来最小化 <code>$J$</code> ，还可以直接用代数计算出值。我们定义 <code>设计矩阵</code> <code>$X$</code> 为 m 行 n 列的矩阵。 <code>$X$</code> 的每一行都是一个样本所有特征的转置：</p>
+
+<p><code>$$X=\begin{bmatrix}(x^{(1)})^T\\(x^{(2)})^T\\\vdots\\(x^{(m)})^T\end{bmatrix}$$</code></p>
+
+<p>同样的我们定义 <code>$\vec y$</code> 是包含对应所有样本的结果集：</p>
+
+<p><code>$$\vec y=\begin{bmatrix}y^{(1)}\\y^{(2)}\\\vdots\\y^{(m)}\end{bmatrix}$$</code></p>
+
+<p>这样我们就可以发现 <code>$X, \vec y$</code> 与 <code>$J(\theta)$</code> 之间的关系：</p>
+
+<p><code>$$\begin{eqnarray}
+\frac{1}{2}(X\theta-\vec y)^T(X\theta-\vec y) &amp;=&amp; \frac{1}{2}\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2 \\
+&amp;=&amp; J(\theta)
+\end{eqnarray}$$</code></p>
+
+<p>进而我们就可以求得 <code>$J(\theta)$</code> 的偏微分向量为：</p>
+
+<p><code>$$\begin{eqnarray}
+\nabla J(\theta) &amp;=&amp; \nabla_\theta\frac{1}{2}(X\theta-\vec y)^T(X\theta-\vec y) \\
+&amp;=&amp; X^TX\theta-X^T\vec y
+\end{eqnarray}$$</code></p>
+
+<p>如果令 <code>$J$</code> 取最小值，则令偏微分向量为零，得到了 <code>常规方程</code> (normal equations) ：</p>
+
+<p><code>$$X^TX\theta=X^T\vec y$$</code></p>
+
+<p>我们就可以直接求得 <code>$\theta$</code> 了：</p>
+
+<p><code>$$\theta=(X^TX)^{-1}X^T\vec y$$</code></p>
+
+<h1 id="概率学解释">概率学解释</h1>
+
+<p>上面我们直接给定了 <code>成本函数</code> <code>$J$</code> 的形式。那么为什么用上面给出的形式就是最好的衡量方式呢？我们先假设样本、误差和结果之间的关系如下：</p>
+
+<p><code>$$y^{(i)}=\theta^Tx^{(i)}+\epsilon^{(i)}$$</code></p>
+
+<p>其中 <code>$\epsilon^{(i)}$</code> 代表模型给出的预测值与实际值的误差，不论是由没能抓住特征引起的，还是就是随机的噪声误差。我们再假设 <code>$\epsilon^{(i)}\sim\mathcal{N}(0,\sigma^2)$</code>，概率符合高斯分布：</p>
+
+<p><code>$$p(\epsilon^{(i)})=\frac{1}{\sqrt{2\pi}\sigma}exp(-\frac{(\epsilon^{(i)})^2}{2\sigma^2})$$</code></p>
+
+<p>这就说明：</p>
+
+<p><code>$$p(y^{(i)}|x^{(i)};\theta)=\frac{1}{\sqrt{2\pi}\sigma}exp(-\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2\sigma^2})$$</code></p>
+
+<p>但是我们现在关心的是 <code>$\theta$</code> 这个变量，因为求假设函数 <code>$h_\theta$</code> 的过程其实就是求出 <code>$\theta$</code> 的过程。我们希望可以构造一个函数使 <code>$\theta$</code> 成为自变量，然后把它叫做 <code>似然函数</code> ：</p>
+
+<p><code>$$L(\theta)=L(\theta;X,\vec y)=p(\vec y|X; \theta)$$</code></p>
+
+<p>由误差是独立的这一假设我们可以给出下面的式子：</p>
+
+<p><code>$$\begin{eqnarray}
+L(\theta) &amp;=&amp; \prod_{i=1}^mp(y^{(i)}|x^{(i)};\theta) \\
+&amp;=&amp; \prod_{i=1}^m\frac{1}{\sqrt{2\pi}\sigma}exp(-\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2\sigma^2})
+\end{eqnarray}$$</code></p>
+
+<p>由最大似然估计的原理我们知道应该找到使函数 <code>$L(\theta)$</code> 的 <code>$\theta$</code> 的值，为此我们需要对函数求导。为了简化求导的过程，我们使用 <code>对数似然函数</code> ：</p>
+
+<p><code>$$\begin{eqnarray}
+\mathcal{l}(\theta) &amp;=&amp; \log L(\theta) \\
+&amp;=&amp; \log\prod_{i=1}^m\frac{1}{\sqrt{2\pi}\sigma}exp(\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2\sigma^2}) \\
+&amp;=&amp; \sum_{i=1}^m\log\frac{1}{\sqrt{2\pi}\sigma}exp(\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2\sigma^2}) \\
+&amp;=&amp; m\log\frac{1}{\sqrt{2\pi}\sigma}-\frac{1}{\sigma^2}\centerdot\frac{1}{2}\sum_{i=1}^{m}(y^{(i)}-\theta^Tx^{(i)})^2
+\end{eqnarray}$$</code></p>
+
+<p>就可以观察得到我们求 <code>$\mathcal{l}(\theta)$</code> 的最大值其实就是求下面式子的最小值：</p>
+
+<p><code>$$\frac{1}{2}\sum_{i=1}^m(y^{(i)}-\theta^Tx^{(i)})^2$$</code></p>
+
+<p>也就是我们一开始提出的函数 <code>$J(\theta)$</code> 。</p>
+
+<h1 id="就近权重线性回归">就近权重线性回归</h1>
+
+<p>在上面提出的原始的线性回归算法中，如果要想对某个点 <code>$x$</code> 作出预测，我们这么做：</p>
+
+<ol>
+<li>找到使 <code>$\sum_i(y^{(i)}-\theta^Tx^{(i)})^2$</code> 取得最小值的 <code>$\theta$</code> 。</li>
+<li>输出 <code>$\theta^Tx$</code> 。</li>
+</ol>
+
+<p>不同的是，就近权重线性回归算法这么做：</p>
+
+<ol>
+<li>找到使 <code>$\sum_iw^{(i)}(y^{(i)}-\theta^Tx^{(i)})^2$</code> 取得最小值的 <code>$\theta$</code> 。</li>
+<li>输出 <code>$\theta^Tx$</code> 。</li>
+</ol>
+
+<p>这里的 <code>$w^{(i)}$</code> 是一组非负数的 <code>权重</code> 。如果对某 <code>$i$</code> 而言 <code>$w^{(i)}$</code> 的值很大，那么在计算 <code>$\theta$</code> 的时候这一项占的成分就很大，反之则会对 <code>$\theta$</code> 的影响就会很小。</p>
+
+<p>一个比较标准的选择权重的函数是：</p>
+
+<p><code>$$w^{(i)}=\exp(-\frac{(x^{(i)}-x)^2}{2\tau^2})$$</code></p>
+
+<p>其中的 <code>$\tau$</code> 控制了重要权重的范围，所以叫做 <code>带宽</code> (bandwidth) 参数，通常通过实验得出。</p>
+
+<p>就近权重线性回归是一种 <code>非参数算法</code> ，而普通的线性回归是一种 <code>参数算法</code> 。前者不存储 <code>$\theta$</code> 的值，而是每次预测时都要计算，后者则是只计算一次就可以了。</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>测试 on 韩飞的博客</title>
+    <link>https://knightf.coding.me/tags/%E6%B5%8B%E8%AF%95/index.xml</link>
+    <description>Recent content in 测试 on 韩飞的博客</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <atom:link href="https://knightf.coding.me/tags/%E6%B5%8B%E8%AF%95/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Karma入门－JavaScript单元测试</title>
+      <link>https://knightf.coding.me/post/karma-tutorial/</link>
+      <pubDate>Fri, 29 Jul 2016 11:26:01 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/karma-tutorial/</guid>
+      <description>
+
+&lt;p&gt;&lt;a href=&#34;http://www.bradoncode.com/blog/2015/02/27/karma-tutorial/&#34;&gt;阅读原文&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;什么是-karma&#34;&gt;什么是 Karma ?&lt;/h2&gt;
+
+&lt;p&gt;Karma 是一个可以通过命令行在真正的浏览器上运行源代码的工具。它之所以强大，是因为它可以在真的浏览器中运行代码，而不是在虚拟的 DOM 中运行。DOM 在不同浏览器上的实现都不一样，所以能用真的浏览器可以保证测试是有效的。&lt;/p&gt;
+
+&lt;p&gt;你可以从&lt;a href=&#34;http://karma-runner.github.io/0.12/index.html&#34;&gt; Karma 官网&lt;/a&gt;上找到更多的细节和文档。我发现安装完成之后还是需要有基础知识才能使用的。我曾经从头到位地使用过所以在这里总结一下。&lt;/p&gt;
+
+&lt;p&gt;这篇文章记述了安装过程，介绍了怎么配置初始化和我给出的一些自定义安装内容。在 Github 上有这个 &lt;a href=&#34;https://github.com/bbraithwaite/karma-seed&#34;&gt;karma-seed&lt;/a&gt; 项目。&lt;/p&gt;
+
+&lt;h2 id=&#34;安装&#34;&gt;安装&lt;/h2&gt;
+
+&lt;p&gt;需要安装 &lt;a href=&#34;http://nodejs.org/&#34;&gt;Node.js&lt;/a&gt; ，因为 Karma 在上面运行。&lt;/p&gt;
+
+&lt;p&gt;想要更细致地安装 Karma ，可以看这个&lt;a href=&#34;http://karma-runner.github.io/0.12/intro/installation.html&#34;&gt;官方的文档&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;不想费劲的话，可以下直接下载 &lt;code&gt;package.json&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;curl -O https://gist.githubusercontent.com/bbraithwaite/7432f64ea45e028eb23c/raw/2a6e23cee09e7737c30cc790393a9b273070fbcb/package.json
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;或者直接把下面的内容粘贴进 &lt;code&gt;package.json&lt;/code&gt; 里面：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+  &amp;quot;name&amp;quot;: &amp;quot;karma-seed&amp;quot;,
+  &amp;quot;version&amp;quot;: &amp;quot;1.0.0&amp;quot;,
+  &amp;quot;description&amp;quot;: &amp;quot;&amp;quot;,
+  &amp;quot;scripts&amp;quot;: {
+    &amp;quot;test&amp;quot;: &amp;quot;./node_modules/karma/bin/karma start karma.conf.js&amp;quot;
+  },
+  &amp;quot;devDependencies&amp;quot;: {
+    &amp;quot;jasmine-core&amp;quot;: &amp;quot;^2.2.0&amp;quot;,
+    &amp;quot;karma&amp;quot;: &amp;quot;^0.12.31&amp;quot;,
+    &amp;quot;karma-chrome-launcher&amp;quot;: &amp;quot;^0.1.7&amp;quot;,
+    &amp;quot;karma-jasmine&amp;quot;: &amp;quot;^0.3.5&amp;quot;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;然后执行：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;完成之后，输入下面的命令检查一下结果：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;./node_modules/karma/bin/karma start
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果都没问题的话，控制台应该输出下面这样的东西：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;INFO [karma]: Karma v0.12.31 server started at http://localhost:9876/
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;配置&#34;&gt;配置&lt;/h2&gt;
+
+&lt;p&gt;接下来需要给 Karma 添加一些配置。为了规范化这个过程，运行下面的命令并且一直接受默认值：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;./node_modules/karma/bin/karma init
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在项目根目录会创建一个叫 &lt;code&gt;karma.conf.js&lt;/code&gt; 的文件。如果你想要了解这些属性，可以看一下&lt;a href=&#34;http://karma-runner.github.io/0.12/config/configuration-file.html&#34;&gt;配置文档&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;想要让测试可以通过 &lt;code&gt;npm test&lt;/code&gt; 这样的命令执行，需要改一下 &lt;code&gt;package.json&lt;/code&gt; 文件。把 &lt;code&gt;package.json&lt;/code&gt; 里面的：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;scripts&amp;quot;: {
+  &amp;quot;test&amp;quot;: &amp;quot;echo \&amp;quot;Error: no test specified\&amp;quot; &amp;amp;&amp;amp; exit 1&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;换成：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;scripts&amp;quot;: {
+  &amp;quot;test&amp;quot;: &amp;quot;./node_modules/karma/bin/karma start karma.conf.js&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;使用 &lt;code&gt;npm test&lt;/code&gt; 来作为测试的入口是我个人的偏好。这样不管我用什么样的工具做测试，我都可以用同样的命令执行。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Karma 文档里提到还可以安装 &lt;code&gt;karma-cli&lt;/code&gt; 来省去 &lt;code&gt;./node_modules/karma/bin/karma start&lt;/code&gt; 这样的麻烦。如果你想装的话：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install -g karma-cli
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果 &lt;code&gt;karma-cli&lt;/code&gt; 装好了，那么 &lt;code&gt;package.json&lt;/code&gt; 里面的内容就要更新一下：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;scripts&amp;quot;: {
+  &amp;quot;test&amp;quot;: &amp;quot;karma start karma.conf.js&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;添加测试&#34;&gt;添加测试&lt;/h2&gt;
+
+&lt;p&gt;我看到的大多数例子都是默认在用 AngularJS 。考虑到我们是纯净安装所以就不用这些框架出场了。作为一个简单的例子我们要测试一个应用，它在单击按钮的时候把两个数加起来并显示出来。HTML 是这样的：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;&amp;lt;html&amp;gt;
+  &amp;lt;head&amp;gt;
+    &amp;lt;title&amp;gt;Magic Calculator&amp;lt;/title&amp;gt;
+  &amp;lt;/head&amp;gt;
+  &amp;lt;body&amp;gt;
+    &amp;lt;input id=&amp;quot;x&amp;quot; type=&amp;quot;text&amp;quot;&amp;gt;
+    &amp;lt;input id=&amp;quot;y&amp;quot; type=&amp;quot;text&amp;quot;&amp;gt;
+    &amp;lt;input id=&amp;quot;add&amp;quot; type=&amp;quot;button&amp;quot; value=&amp;quot;Add Numbers&amp;quot;&amp;gt;
+    Result: &amp;lt;span id=&amp;quot;result&amp;quot; /&amp;gt;
+    &amp;lt;script type=&amp;quot;text/javascript&amp;quot; src=&amp;quot;lib/calculator.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;
+    &amp;lt;script&amp;gt;
+      calculator.init();
+    &amp;lt;/script&amp;gt;
+  &amp;lt;/body&amp;gt;
+&amp;lt;/html&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;创建两个新文件：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;lib/calculator.js&lt;/li&gt;
+&lt;li&gt;test/calculator.test.js&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;然后先把这些粘贴进 &lt;code&gt;test/calculator.test.js&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;describe(&#39;Calculator&#39;, function() {
+
+  it(&#39;should add numbers&#39;);
+
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在执行 &lt;code&gt;npm test&lt;/code&gt; 的话是不会检测到这个新的测试的。我们需要修改配置文件让 Karma 知道这些新的文件的存在。更新 &lt;code&gt;karma.conf.js&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  // list of files / patterns to load in the browser
+  files: [
+    &#39;lib/*.js&#39;,
+    &#39;test/*.js&#39;
+  ],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在再执行 &lt;code&gt;npm test&lt;/code&gt; 的话控制台就会输出类似下面的东西了：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;INFO [karma]: Karma v0.12.31 server started at http://localhost:9876/
+INFO [launcher]: Starting browser Chrome
+INFO [Chrome 40.0.2214 (Mac OS X 10.10.2)]: Connected on socket bDMxeU51miCD4wNe3 with id 34236680
+Chrome 40.0.2214 (Mac OS X 10.10.2): Executed 0 of 1 (skipped 1) ERROR (0.004 secs / 0 secs)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;使用 Chrome 这样的浏览器执行测试还有一个好处就是访问输出的 URL 的时候，浏览器自带了调试的功能。下面我们就给测试文件添加一些有意义的内容：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;/*
+ * Unit tests for lib/calculator.js
+ */
+
+describe(&#39;Calculator&#39;, function() {
+
+  // inject the HTML fixture for the tests
+  beforeEach(function() {
+    var fixture = &#39;&amp;lt;div id=&amp;quot;fixture&amp;quot;&amp;gt;&amp;lt;input id=&amp;quot;x&amp;quot; type=&amp;quot;text&amp;quot;&amp;gt;&#39; + 
+      &#39;&amp;lt;input id=&amp;quot;y&amp;quot; type=&amp;quot;text&amp;quot;&amp;gt;&#39; + 
+      &#39;&amp;lt;input id=&amp;quot;add&amp;quot; type=&amp;quot;button&amp;quot; value=&amp;quot;Add Numbers&amp;quot;&amp;gt;&#39; +
+      &#39;Result: &amp;lt;span id=&amp;quot;result&amp;quot; /&amp;gt;&amp;lt;/div&amp;gt;&#39;;
+
+    document.body.insertAdjacentHTML(
+      &#39;afterbegin&#39;, 
+      fixture);
+  });
+
+  // remove the html fixture from the DOM
+  afterEach(function() {
+    document.body.removeChild(document.getElementById(&#39;fixture&#39;));
+  });
+
+  // call the init function of calculator to register DOM elements
+  beforeEach(function() {
+    window.calculator.init();
+  });
+
+  it(&#39;should return 3 for 1 + 2&#39;, function() {
+    document.getElementById(&#39;x&#39;).value = 1;
+    document.getElementById(&#39;y&#39;).value = 2;
+    document.getElementById(&#39;add&#39;).click();
+    expect(document.getElementById(&#39;result&#39;).innerHTML).toBe(&#39;3&#39;);
+  });
+
+  it(&#39;should calculate zero for invalid x value&#39;, function() {
+    document.getElementById(&#39;x&#39;).value = &#39;hello&#39;;
+    document.getElementById(&#39;y&#39;).value = 2;
+    document.getElementById(&#39;add&#39;).click();
+    expect(document.getElementById(&#39;result&#39;).innerHTML).toBe(&#39;0&#39;);
+  });
+
+  it(&#39;should calculate zero for invalid y value&#39;, function() {
+    document.getElementById(&#39;x&#39;).value = 1;
+    document.getElementById(&#39;y&#39;).value = &#39;goodbye&#39;;
+    document.getElementById(&#39;add&#39;).click();
+    expect(document.getElementById(&#39;result&#39;).innerHTML).toBe(&#39;0&#39;);
+  });
+
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这个文件里的重点：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;测试文件用到的 HTML 是在浏览器里注入的。&lt;/li&gt;
+&lt;li&gt;DOM 元素可以通过和浏览器一样的方式访问到。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;接下来加上基础的计算逻辑，把下面的内容粘贴进 &lt;code&gt;lib/calculator.js&lt;/code&gt; 里面：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;window.calculator = window.calculator || {};
+
+(function() {
+  var calculate = function() {
+    var x = document.getElementById(&#39;x&#39;).value;
+    var y = document.getElementById(&#39;y&#39;).value;
+    document.getElementById(&#39;result&#39;).innerHTML = x + y;
+  };
+
+  window.calculator.init = function() {
+    document.getElementById(&#39;add&#39;).addEventListener(&#39;click&#39;, calculate);
+  };
+})();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;我在里面留了一些 bug 好让测试失败。现在运行 &lt;code&gt;npm test&lt;/code&gt; 就会出现测试未通过的信息。Karma 具有监听的功能，如果这些文件被改动后不需要再次运行 &lt;code&gt;npm test&lt;/code&gt; ，它会自动重启测试。&lt;/p&gt;
+
+&lt;p&gt;那现在把 bug 去掉，&lt;code&gt;calculator.js&lt;/code&gt; 应该长这样：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;&#39;use strict&#39;;
+
+window.calculator = window.calculator || {};
+
+(function() {
+  var getIntById = function(id) {
+    return parseInt(document.getElementById(id).value, 10);
+  };
+
+  var calculate = function() {
+    var sum = getIntById(&#39;x&#39;) + getIntById(&#39;y&#39;);
+    document.getElementById(&#39;result&#39;).innerHTML = isNaN(sum) ? 0 : sum;
+  };
+
+  window.calculator.init = function() {
+    document.getElementById(&#39;add&#39;).addEventListener(&#39;click&#39;, calculate);
+  };
+})();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在测试就应该通过了：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;INFO [karma]: Karma v0.12.31 server started at http://localhost:9876/
+INFO [launcher]: Starting browser PhantomJS
+INFO [PhantomJS 1.9.8 (Mac OS X)]: Connected on socket WE5_e1Pp_f3CI1Zmm4tw with id 82088536
+PhantomJS 1.9.8 (Mac OS X): Executed 3 of 3 SUCCESS (0.016 secs / 0.001 secs)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;可选配置&#34;&gt;可选配置&lt;/h2&gt;
+
+&lt;p&gt;以前我做的项目里曾经做过这些配置：&lt;/p&gt;
+
+&lt;h3 id=&#34;使用-mocha-和-should&#34;&gt;使用 Mocha 和 Should&lt;/h3&gt;
+
+&lt;p&gt;如果你之前写过 Node.js 的单元测试你很可能会用到 Mocha。我偏好用 Mocha 和 Should 风格的断言。刚才默认的安装我们用了 Jasmine，但是如果你想用 Mocha 的话改起来非常容易。&lt;/p&gt;
+
+&lt;p&gt;安装，并且把 Jasmine 从 &lt;code&gt;package.json&lt;/code&gt; 里面删掉：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install karma-mocha --save-dev
+npm install karma-chai --save-dev
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;更新 &lt;code&gt;karma.conf.js&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  frameworks: [&#39;mocha&#39;, &#39;chai&#39;],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在我们就能用这种格式写断言了：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;1.should.equal(2);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;使用无头浏览器&#34;&gt;使用无头浏览器&lt;/h3&gt;
+
+&lt;p&gt;如果测试多了，再用多种浏览器测试会变的很慢。我有的时候并不需要把代码在每种浏览器里都测一遍，所以为了速度我会用无头浏览器 &lt;a href=&#34;http://www.bradoncode.com/blog/2015/02/27/karma-tutorial/phantomjs.org&#34;&gt;PhantomJS&lt;/a&gt;。然后等到最后代码成型的时候再在每种浏览器里测试。&lt;/p&gt;
+
+&lt;p&gt;安装 PhantomJS 的话：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install karma-phantomjs-launcher --save-dev
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;那么在 &lt;code&gt;karma.conf.js&lt;/code&gt; 里面就要这样改：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  browsers: [&#39;PhantomJS&#39;],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;设置测试覆盖范围&#34;&gt;设置测试覆盖范围&lt;/h3&gt;
+
+&lt;p&gt;有时我会需要测试覆盖范围的报告。这可以用 &lt;a href=&#34;http://gotwarlost.github.io/istanbul/&#34;&gt;Istanbul&lt;/a&gt; 来实现。&lt;/p&gt;
+
+&lt;p&gt;启用覆盖范围报告，安装：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install karma-coverage --save-dev
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在 &lt;code&gt;karma.conf.js&lt;/code&gt; 里面，设置这些属性：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  preprocessors: {
+    &#39;lib/*.js&#39;: &#39;coverage&#39;
+  },
+  reporters: [&#39;progress&#39;, &#39;coverage&#39;],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;当运行测试的时候，会创建一个新的 &lt;code&gt;coverage&lt;/code&gt; 文件夹。打开里面的 &lt;code&gt;index.html&lt;/code&gt; 就可以看到报告。&lt;/p&gt;
+
+&lt;h3 id=&#34;设置测试配置文件&#34;&gt;设置测试配置文件&lt;/h3&gt;
+
+&lt;p&gt;我工作时总是希望能够简单的在不同的测试目标中切换。当做小的改动的时候我希望用 PhantomJS 快速的测试而且不需要覆盖范围之类的东西。但当我完成一个功能的时候希望能够全面的测试。&lt;/p&gt;
+
+&lt;p&gt;我通过设置环境变量实现这样的切换，在 &lt;code&gt;package.json&lt;/code&gt; 中：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;scripts&amp;quot;: {
+  &amp;quot;test&amp;quot;: &amp;quot;karma start karma.conf.js&amp;quot;,
+  &amp;quot;full-test&amp;quot;: &amp;quot;NODE_ENV=test karma start karma.conf.js&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果我执行 &lt;code&gt;npm run full-test&lt;/code&gt; 就是全面的跨浏览器测试，包括覆盖范围报告。&lt;/p&gt;
+
+&lt;h3 id=&#34;处理-html-片段&#34;&gt;处理 HTML 片段&lt;/h3&gt;
+
+&lt;p&gt;在上面的内容里 HTML 代码是通过 JavaScript 注入进去的。当测试变多的时候，插入这些代码就变得累人了。有很多插件可以解决这个问题，我用的是 &lt;a href=&#34;https://github.com/billtrik/karma-fixture&#34;&gt;karma-fixture&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;把 HTML 片段存进文件里然后在测试里就可以这样引用：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt; beforeEach(function() {
+    fixture.load(&#39;calculator.fixture.html&#39;);
+ });
+ ~~~
+
+See an [example test here](https://github.com/bbraithwaite/karma-seed/blob/master/test/calculator.test.js).
+
+### Keep DOM accessor code out of Tests
+
+This is a personal preference concerning style. The test example given previously had code to find elements in the test method e.g. _document.getElementById_. This additional detail can muddy the tests making them less readable.
+
+~~~javascript
+it(&#39;should return 3 for 1 + 2&#39;, function() {
+  document.getElementById(&#39;x&#39;).value = 1;
+  document.getElementById(&#39;y&#39;).value = 2;
+  document.getElementById(&#39;add&#39;).click();
+  expect(document.getElementById(&#39;result&#39;).innerHTML).toBe(&#39;3&#39;);
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;seed-项目&#34;&gt;Seed 项目&lt;/h2&gt;
+
+&lt;p&gt;包含上面所有内容的项目在这里：&lt;a href=&#34;https://github.com/bbraithwaite/karma-seed&#34;&gt;https://github.com/bbraithwaite/karma-seed&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

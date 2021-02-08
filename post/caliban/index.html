@@ -1,0 +1,266 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>Caliban &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>Caliban</h1>
+                    <h2 class="headline">
+                    June 11, 2016 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/%E8%84%91%E6%B4%9E">脑洞</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<h1 id="起源">起源</h1>
+
+<h2 id="启发">启发</h2>
+
+<p>看完<a href="http://movie.mtime.com/208116/">X战警:天启</a>之后觉得超能力这种东西对普通的人类好像就有魔力一般。这也是自然，生物本就是向着更高级的存在看齐的。加上前一阵在单位大家都参玩过一个姓名大作战的文字回合游戏，感觉很有意思。用名字对战，其实就是给了你不同的能力。从数值上看，有的人明显就是防战，还有盗贼、法师什么的。说白了也是一种超能力。但这种设计并没有让你长期使用它的意思，因为你只能输入自己的姓名，其余所有东西都是自动生成的。</p>
+
+<h2 id="反思">反思</h2>
+
+<p>超能力是不是有一种吸引力呢？就我个人的体验来说，是有的：</p>
+
+<ul>
+<li>观看X战警的时候，看到肆意释放的超能力，总有一种激动的感觉</li>
+<li>我只是个屌丝，没有钱也没有颜，在人类社会中就总希望也能证明自己</li>
+<li>我希望和别人不一样</li>
+</ul>
+
+<p>如果这几点你也体会过，那么应该是可以同意人是希望拥有超能力的，它是有吸引力的。那么存在于服务器上的超能力真的有意义么？它看不见也摸不到，只能通过通用计算设备访问到，有它的独特之处么？</p>
+
+<h1 id="设计">设计</h1>
+
+<p>讨论一下如果真的要打造这样的社交附属产品，应该秉持的几个原则。</p>
+
+<h2 id="自主配置超能力的余地">自主配置超能力的余地</h2>
+
+<p>既然要社交，就要有一个阿凡达。而在这个系统中的阿凡达不应该是姓名大作战这样完全随机的。首先，与自己的超能力有关的内容，应该是允许一定程度的自定义的。我们不妨来看看X战警里面的设定。</p>
+
+<p>万磁王，他是可以用意念控制金属物体。X教授，可以入侵别人的思想。金刚狼，拥有快速再生的能力。这一众超能力者乍一看，都是很直接的 <em>能力</em> ，并不能让我们直接拿来照搬。因为我们虽然想要借鉴这个设定，但又不想让每一个参与进来的用户直接定义自己的能力。不然所有人都用凤凰女这样的能力，这个社区没法玩了🐦。</p>
+
+<p>感谢这个丰富多彩的世界，可以用来学习的素材太多了，比如海贼王。海贼王中每个人都要吃掉恶魔果实才可以获得能力，而在吃掉之前，是不知道恶魔果实会给你带来什么能力的(?)。所以与其让用户直接定义自己的能力，不如定义可以给他们带来能力的东西，之后我们都叫它<strong>燃料</strong>。这样既可以保留一定的自主，也避免了全部都是凤凰女的窘境。</p>
+
+<h2 id="决定超能力的因素">决定超能力的因素</h2>
+
+<p>用户可以定义自己超能力，但是怎么把燃料转化成为确定的能力呢？其实我们拿燃料这个名词作为超能力的来源十分贴切，就像万磁王离开了金属，他也只是个普通人一样，每个超能力者都需要一种燃料。既然我在天马星空般的设计，不如就跟着思路走下去。既然叫<strong>燃料</strong>，那么要产生能量，就需要<strong>燃机️</strong>了。</p>
+
+<p>如果要加上点趣味性的话，在燃机这一步最合适不过了。可以随机给出不同的燃机，得出不同的结果。给定组合<code>(燃料, 燃机)</code>，是决定一种超能力的一个且唯一一个因素。</p>
+
+<h2 id="谁更强">谁更强？</h2>
+
+<p>既然这样的组合决定了一种超能力，那么怎么比较两种超能力哪种更强呢？所以这个组合可以更具体的定义出来，即：</p>
+
+<blockquote>
+<p>燃料是一段hash值，用<code>factor</code>表示</p>
+
+<p>燃机是一个函数，用<code>sp</code>表示，<code>sp</code>有一个输入值，即<code>factor</code></p>
+
+<p><code>sp</code>的输出是一个浮点数，即这种超能力的战斗力</p>
+</blockquote>
+
+<p>所以还是必须得有一个数值，我们这些人类才能让计算机做比较。</p>
+
+<h2 id="随机性">随机性</h2>
+
+<p>就好像变种人一开始也不知道自己会有什么样的超能力一样，谁也不知道自己的超能力该怎么用，谁和谁相互克制。可以用图来表示各种超能力之间的关系。图中的顶点代表每种超能力，边存储处理战斗力的函数。所以即便你拥有像是凤凰女一样的超高战斗力，如果另一边是镭射眼，两个人经过边上存储的函数的计算，得到最终的伤害数值。</p>
+
+<h1 id="总结">总结</h1>
+
+<p>上面只是一些粗浅的想法。感觉我会有心情写这些，真的是受到了当年<a href="http://www.discuz.net/forum.php">Discuz</a>这样的论坛系统毒害太深，当时在论坛社交的大背景下面，真的是涌现出了众多的勋章、游戏系统，给当时泡坛子增添了很多趣味。但我后来越来越少上论坛，当时年龄也小没有能力做自己的论坛插件，所以对这些还有一点执念。而现在微博、微信这些大平台的接口越来越多，也想尝试一下。</p>
+
+<p>小应用的名字也起好了，叫<strong>Caliban</strong>。</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

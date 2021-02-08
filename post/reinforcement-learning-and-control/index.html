@@ -1,0 +1,408 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>机器学习 第十三章 强化学习与控制 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>机器学习 第十三章 强化学习与控制</h1>
+                    <h2 class="headline">
+                    July 4, 2017 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/machine-learning">Machine Learning</a>
+                        
+                            <a href="https://knightf.coding.me/tags/stanford-cs229">Stanford CS229</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<p>可以成功应用强化学习的问题有直升机自动驾驶、机器人下肢平衡、手机网络路由和市场策略选择等等。先提出 <code>马尔可夫决策过程</code> (Markov decision processes) 这个定义来规范化的描述强化学习要解决的问题。</p>
+
+<h2 id="马尔可夫决策过程">马尔可夫决策过程</h2>
+
+<p>马尔可夫决策过程是一个五元组 <code>$(S, A, \{P_{sa}\}, \gamma, R)$</code> ，其中：</p>
+
+<p><code>$S$</code> 是 <code>状态</code> 的集合。例如在直升机自动驾驶问题中，它包含了直升机可能的三维空间位置与朝向。</p>
+
+<p><code>$A$</code> 是 <code>动作</code> 的集合。例如直升机可能前往的所有方向。</p>
+
+<p><code>$P_{sa}$</code> 是状态转换概率。对所有 <code>$s \in S$</code> 和 <code>$a \in A$</code> ， <code>$P_{sa}$</code> 是一个在状态空间上的概率分布。简单的说，它可以表示在状态 <code>$s$</code> 中执行动作 <code>$a$</code> 转换到其他状态的概率。</p>
+
+<p><code>$\gamma\in [0,1)$</code> 叫做 <code>折扣因子</code> 。</p>
+
+<p><code>$R : S \times A \rightarrow \mathbb{R}$</code> 是奖励函数。有时它也许只与状态有关。</p>
+
+<p>系统从状态 <code>$s_{0}$</code> 开始，不断的从动作集合中选择一个动作 <code>$a_{0}$</code> 执行决策过程。执行动作后系统就会从之前的状态根据 <code>$s_{1} \sim P_{s_{0}a_{0}}$</code> 的概率进行状态转换。不断进行这样的状态转换，就能够根据形成的序列计算出总的收益 (如果奖励函数只与状态有关，则没有 <code>$a$</code>)：</p>
+
+<p><code>$$R(s_{0}, a_{0}) + \gamma R(s_{1}, a_{1}) + \gamma^{2} R(s_{2}, a_{2}) + \cdots$$</code></p>
+
+<p>对于一般的问题而言，通常采用更简单的奖励函数 <code>$R(s)$</code> 。而强化学习要解决的，就是能够选择出一定的动作来最大化总收益的期望：</p>
+
+<p><code>$$E[R(s_0)+\gamma R(s_1)+\gamma^2 R(s_2)+\cdots]$$</code></p>
+
+<p>注意时间 <code>$t$</code> 时的奖励值被因子 <code>$\gamma^{t}$</code> 打了 <code>折扣</code> ，所以可见正收益越早发生越好，负收益留到越晚越好。</p>
+
+<p><code>策略</code> 是映射状态到动作的函数 <code>$\pi : S \rightarrow A$</code> 。 <code>执行</code> 某策略就意味着只要在状态 <code>$s$</code> 下就选择动作 <code>$a = \pi(s)$</code> 。同时定义策略 <code>$\pi$</code> 的 <code>价值函数</code> 为：</p>
+
+<p><code>$$V^{\pi}(s) = E[R(s_0)+\gamma R(s_1)+\gamma^2 R(s_2)+\cdots|s_0 =s, \pi]$$</code></p>
+
+<p>给定策略 <code>$\pi$</code> ，它的价值函数 <code>$V^{\pi}$</code> 满足 <code>贝尔曼方程</code> (动态规划方程) ：</p>
+
+<p><code>$$V^{\pi}(s)=R(s)+\gamma \sum_{s'\in S}{P_{s\pi(s)}{(s')V^{\pi}(s')}}$$</code></p>
+
+<p>上式说明由状态 <code>$s$</code> 作为起点的收益期望总和由两部分组成：</p>
+
+<p>一是我们从起点开始的 <code>即时收益</code> <code>$R(s)$</code> ，二是未来产生的折扣收益总和。仔细观察第二项，发现可改写为 <code>$E_{s'\sim P_{s\pi(s)}}{[V^{\pi}(s')]}$</code> ，也就是以状态 <code>$s'$</code> 为起点所有折扣收益的期望总和，并且 <code>$s'$</code> 按照 <code>$P_{s\pi(s)}$</code> 分布。根据贝尔曼方程的递归特性，可以简单的求解 <code>$V^{\pi}$</code> 的值。</p>
+
+<p>定义 <code>$最优价值函数$</code> 为：</p>
+
+<p><code>$$
+\begin{eqnarray}
+V^{*}(s) &amp;=&amp; \max_{\pi}{V^{\pi}(s)} \tag{1} \\
+&amp;=&amp; R(s)+\max_{a \in A}{\gamma \sum_{s' \in S}{P_{sa}(s')V^{*}(s')}} \tag{2}
+\end{eqnarray}
+$$</code></p>
+
+<p>同时定义 <code>$最优策略$</code> 为：</p>
+
+<p><code>$$\pi^{*}(s)=\arg\max_{a \in A}{P_{sa}(s')V^{*}(s')} \tag{3}$$</code></p>
+
+<p>通过观察不难发现最优策略不论在何种状态下都是同一个策略，不会根据所处状态的不同而变化。</p>
+
+<h2 id="价值迭代和策略迭代">价值迭代和策略迭代</h2>
+
+<p>求解有限状态的马尔可夫决策过程的第一种方法 <code>$价值迭代$</code> ：</p>
+
+<ul>
+<li>对于所有 <code>$s$</code> 都初始化 <code>$V(s)$</code> 为 0</li>
+<li>收敛前：对每个状态 <code>$V(s):=R(s)+\max_{a \in A}{\gamma \sum_{s'}{P_{sa}(s')V(s')}}$</code></li>
+</ul>
+
+<p>通过这种方法，可以得到 <code>$V^*$</code> 的值并利用式子3得到最优策略。第二种方法 <code>$策略迭代$</code> ：</p>
+
+<ul>
+<li>随机生成策略 <code>$\pi$</code></li>
+<li>收敛前：令 <code>$V:=V^{\pi}$</code> ，然后对每个状态 <code>$\pi(s):=\arg\max_{a \in A}{\gamma \sum_{s'}{P_{sa}(s')V(s')}}$</code></li>
+</ul>
+
+<p>对于拥有较大状态空间的马尔可夫决策过程，使用价值迭代方法更简便；反之策略迭代则更适合小型问题。</p>
+
+<h2 id="为马尔可夫决策建模">为马尔可夫决策建模</h2>
+
+<p>现实情况中，状态转换概率和奖励函数大多都没有现成可用的值，而是需要从数据中找到估计值。假设我们可以不断的观察一个已有的系统中的数据，重复试验状态不断转换的过程，那么可以用实际观测到的数据来得到状态转换的概率：</p>
+
+<p><code>$$P_{sa}(s')=\frac{状态 s 下，采取行动 a 并转移到了状态 s' 的次数}{状态 s 下，采取行动 a 的次数} \tag{4}$$</code></p>
+
+<p>如果都没有能观测到足够的数据发生了 <code>$\frac{0}{0}$</code> 的情况，则可以使用 <code>$1/|S|$</code> 来近似。而重复试验的次数越多，数据拟合的程度也就越高。同理，奖励函数也可以通过观测不断更新。</p>
+
+<p>结合之前提到的价值迭代方法，可以一边实验一边更新最优价值函数与最优策略。首先随机生成一个策略 <code>$\pi$</code>，然后不断重复以下过程：</p>
+
+<ul>
+<li>以 <code>$\pi$</code> 为策略，执行若干次马尔可夫决策过程</li>
+<li>通过积累到的数据更新 <code>$P_{sa}$</code> (和 <code>$R$</code>)</li>
+<li>以新的状态转换概率值和奖励函数，用价值迭代算法更新价值函数</li>
+<li>基于新的价值函数，用贪心算法求得新的策略 <code>$\pi$</code></li>
+</ul>
+
+<h2 id="连续状态马尔可夫决策过程">连续状态马尔可夫决策过程</h2>
+
+<p>状态空间 <code>$S=\mathbb{R}^{n}$</code> 如果是连续的话，将不能明确指出具体状态的值。</p>
+
+<h3 id="离散化">离散化</h3>
+
+<p>离散化通过分段把连续状态空间分成多个独立的状态。这样做虽然很简单，但是有两个很明显的不足。第一是每一个区间都把一些连续的状态值近似到了一个特定的值，所以它们原始对应的价值函数结果各不相同却被强行统一了，这便会对价值函数的结果产生影响。第二是状态维度数目的问题，如果表示状态的向量维度很高，那么如果把 <code>$n$</code> 个维度都离散入 <code>$k$</code> 个值，那么总的状态数目就有 <code>$k^n$</code> 导致很难计算。</p>
+
+<p>所以离散化可以很好的解决低维度的简单问题，而对于复杂的问题并不合适。</p>
+
+<h3 id="价值函数近似">价值函数近似</h3>
+
+<h4 id="使用模拟器">使用模拟器</h4>
+
+<p>模拟器可以根据输入的 <code>$s_t$</code> 和 <code>$a_t$</code> ，依据状态转换概率分布 <code>$P_{s_t a_t}$</code> 生成下一个状态 <code>$s_{t+1}$</code> 。有很多种方法可以生成一个模拟器。</p>
+
+<p>一种方法是通过类似物理定律之类的关系来直接计算得到后续的状态。不论是通过公式推导还是一些模拟的软件都可以得到这个固定的模拟器，因为系统就是按照一定的规律运作的。</p>
+
+<p>另一种方法是通过学习收集到的数据。比如选择以下类似线性回归的模拟器：</p>
+
+<p><code>$$s_{t+1}=As_t+Ba_t \tag{5}$$</code></p>
+
+<p>这样这个模拟器中的参数就是方程 <code>$A$</code> 和 <code>$B$</code> 。如记录了 <code>$m$</code> 次决策过程，则有下式为最优解：</p>
+
+<p><code>$$\arg\min_{A,B}\sum_{i=1}^m\sum_{t=0}^{T-1}{||s_{t+1}^{(i)}-\left(As_{t}^{(i)}+Ba_{t}^{(i)}\right)||}^2$$</code></p>
+
+<p>学习后得到所有参数后，可以直接构建 <code>$确定$</code> 模型，也就是说只使用学习到的参数和它构成的表达式得到结果。也可以用这些参数构建一个 <code>$随机$</code> 模型，它的表达式如下：</p>
+
+<p><code>$$s_{t+1}=As_t+Ba_t+\epsilon_t$$</code></p>
+
+<p>唯一和确定模型不同的就是后面多了噪音项。通常这一项符合均值为0的高斯分布，并且这个高斯分布的协方差矩阵可以直接由数据学习得到。</p>
+
+<p>以上是通过拟合了一个线性回归的模型来得到模拟器，其他种类的模型也可以。</p>
+
+<h4 id="近似价值迭代">近似价值迭代</h4>
+
+<p><code>近似价值迭代</code> (fitted value iteration) 算法可以用在连续状态空间的马尔可夫决策过程中不断逼近价值函数以得到近似值。前提是状态空间连续，但是动作空间是一定的。理想化的表达连续情况下价值迭代的过程如下：</p>
+
+<p><code>$$\begin{eqnarray}
+V(s) &amp;:=&amp; R(s)+\gamma\max_{a}\int_{s'}P_{sa}(s')V(s')ds' \tag{6} \\
+&amp;:=&amp; R(s)+\gamma\max_{a}E_{s'\sim P_{sa}}[V(s')] \tag{7}
+\end{eqnarray}$$</code></p>
+
+<p>近似价值迭代逼近了这整个积分的结果。具体来说在这里先使用线性回归这种监督学习算法作为例子：</p>
+
+<p><code>$$V(s)=\theta^T\phi(s)$$</code></p>
+
+<p><code>$\phi$</code> 是从状态到特征的映射。</p>
+
+<p>取样出 <code>$m$</code> 个样本状态，对于每一个状态，近似价值迭代算法会先计算出 <code>$y^{(i)}$</code> ，也就是式子7中右侧的数值。然后应用监督学习算法来让 <code>$V(s)$</code> 靠近 <code>$R(s)+\gamma\max_{a}E_{s'\sim P_{sa}}[V(s')]$</code> (也就是 <code>$y^{(i)}$</code>) 。</p>
+
+<p>详细的算法内容如下：</p>
+
+<ul>
+<li>随机从状态空间 <code>$S$</code> 中取 <code>$m$</code> 个样本 <code>$s^{(1)}, s^{(2)}, \ldots s^{(m)}$</code></li>
+<li>初始化 <code>$\theta$</code> 为 0</li>
+<li>重复以下步骤 {</li>
+</ul>
+
+<p>&nbsp;&nbsp;对 <code>$i=1,\ldots,m$</code> {</p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;对每个 <code>$a \in A$</code> {</p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;取样 <code>${s'}_1,\ldots,{s'}_k \sim P_{s^{(i)}a}$</code> (用之前讲的模拟器)</p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>$q(a)=\frac{1}{k}\sum_{j=1}^{k}{R(s^{(i)})+\gamma V({s'}_j)}$</code></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em>// <code>$q(a)$</code> 是对 <code>$R(s)+\gamma E_{s'\sim P_{sa}}[V(s')]$</code> 的估计</em></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<code>$y^{(i)}=max_{a}q(a)$</code></p>
+
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<em>// <code>$y^{(i)}$</code> 是对 <code>$R(s)+\gamma\max_{a}E_{s'\sim P_{sa}}[V(s')]$</code> 的估计</em></p>
+
+<p>&nbsp;&nbsp;}</p>
+
+<p>&nbsp;&nbsp;<em>//在原来离散状态空间问题的价值迭代中</em></p>
+
+<p>&nbsp;&nbsp;<em>//新一轮的价值函数是直接赋值的 <code>$V(s^{(i)}):=y^{(i)}$</code></em></p>
+
+<p>&nbsp;&nbsp;<em>//但现在连续状态空间中上面的值不是等价的，只能是近似</em></p>
+
+<p>&nbsp;&nbsp;<em>//也就是使用监督学习算法所要解决的问题</em></p>
+
+<p>&nbsp;&nbsp;<code>$\theta:=\arg\min_{\theta}{\frac{1}{2}\sum_{i=1}^{m}(\theta^T \phi(s^{(i)})-y^{(i)})^2}$</code></p>
+
+<p>}</p>
+
+<p>上面算法中更新 <code>$\theta$</code> 的步骤，是典型的监督学习可以解决的问题。这里 <code>$s$</code> 即为样本，取样得到的 <code>$y^{(i)}$</code> 即为结果。与离散情况中的价值迭代不同，上面的算法不能完全保证收敛。但实际情况中表现是不错的。</p>
+
+<p>值的注意的是，如果模拟器是确定模型，那么上面 <code>$k$</code> 的取值应该为 1 。因为确定模拟器给出的结果是一定的，所以没有意义取若干样本。最后近似价值迭代给出最优的价值函数，而得到对应的最优策略则还需要计算：</p>
+
+<p><code>$$\arg\max_{a}E_{s' \sim P_{sa}}[V(s')] \tag{8}$$</code></p>
+
+<p>可以发现也需要计算期望，其过程和近似价值迭代算法中取样计算价值函数的过程类似。实际应用中也可以通过一些近似来简化这个计算过程。</p>
+
+<p>例如采用如 <code>$s_{t+1}=f(s_t, a_t)+\epsilon$</code> 这样的模拟器，并且其中函数 <code>$f$</code> 是确定的， <code>$\epsilon$</code> 是一个均值为 0 的高斯噪声。那么就可以选择这个动作：</p>
+
+<p><code>$$\arg\max_{a}V(f(s, a))$$</code></p>
+
+<p>结合式子 8 可以这样理解得到这个结论的过程：</p>
+
+<p><code>$$
+\begin{eqnarray}
+E_{s'}[V(s')] &amp;\approx&amp; V(E_{s'}[s']) \tag{9} \\
+&amp;=&amp; V(f(s,a)) \tag{10}
+\end{eqnarray}
+$$</code></p>
+
+<p>所以如果噪声的均值为 0 ，那么这个近似是合理的。但是如果问题不符合这样的近似条件，那么对状态空间进行取样计算价值函数的值，可能会花费很多计算成本。</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

@@ -1,0 +1,329 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>机器学习 第四章 生成学习算法 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>机器学习 第四章 生成学习算法</h1>
+                    <h2 class="headline">
+                    March 7, 2017 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/machine-learning">Machine Learning</a>
+                        
+                            <a href="https://knightf.coding.me/tags/stanford-cs229">Stanford CS229</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<p>直接学习 <code>$p(y|x)$</code> 的分布的算法（比如逻辑回归），或者试图直接找到样本空间到标签 <code>$\{0, 1\}$</code> 之间的映射关系的算法（比如感知器），叫做 <code>区别学习算法</code> (discriminative learning algorithms)。</p>
+
+<p>而生成学习算法是相反的，它试图为 <code>$p(x|y)$</code> 的分布建立模型。例如，我们用 <code>$y$</code> 的值来代表结果：1 代表大象，0 代表狗，那么 <code>$p(x|y=1)$</code> 则代表了大象的特征的分布，<code>$p(x|y=0)$</code> 代表了狗的特征的分布。这样就可以用贝叶斯公式求出来 <code>$p(y|x)$</code> 了：</p>
+
+<p><code>$$p(y|x)=\frac{p(x|y)p(y)}{p(x)}$$</code></p>
+
+<p>这里分母可以通过 <code>$p(x)=p(x|y=1)p(y=1)+p(x|y=0)p(y=0)$</code> 计算出来。而如果我们是要计算 <code>$p(y|x)$</code> 来做预测的话，我们并不需要真实计算出值，所以分母是不需要计算的。</p>
+
+<h1 id="高斯判别式分析-gaussian-discriminant-analysis">高斯判别式分析 (gaussian discriminant analysis)</h1>
+
+<h2 id="多变量正态分布">多变量正态分布</h2>
+
+<p>多变量正太分布由两个参数构成， <code>期望向量</code> (mean vector) <code>$\mu$</code> 和 <code>协方差矩阵</code> (covariance matrix)  <code>$\Sigma$</code> 。它的密度公式如下：</p>
+
+<p><code>$$p(x;\mu,\Sigma)=\frac{1}{(2\pi)^{n/2}|\Sigma|^{1/2}}\exp{(-\frac{1}{2}(x-\mu)^T\Sigma^{-1}(x-\mu))}$$</code></p>
+
+<p>其中 <code>$|\Sigma|$</code> 表示矩阵的行列式。而一个列向量的协方差可以按照这样的方法求得：</p>
+
+<p><code>$$\text{Cov}(Z)=E[ZZ^T]-(E[Z])(E[Z])^T$$</code></p>
+
+<h2 id="高斯判别式分析模型">高斯判别式分析模型</h2>
+
+<p>如果输入样本 <code>$x$</code> 是连续的随机变量，我们就可以用 GDA 模型：</p>
+
+<p><code>$$\begin{eqnarray}
+y &amp;\sim&amp; \text{Bernoulli}(\phi) \\
+x|y = 0 &amp;\sim&amp; \mathcal{N}(\mu_0,\Sigma) \\
+x|y = 1 &amp;\sim&amp; \mathcal{N}(\mu_1,\Sigma)
+\end{eqnarray}$$</code></p>
+
+<p>所以模型中的参数有 <code>$\phi$</code> ， <code>$\Sigma$</code> ， <code>$\mu_0$</code> 和 <code>$\mu_1$</code> 。对数似然函数如下：</p>
+
+<p><code>$$\begin{eqnarray}
+l(\phi,\mu_0,\mu_1,\Sigma) &amp;=&amp; \log{\prod_{i=1}^m p(x^{(i)},y^{(i)};\phi,\mu_0,\mu_1,\Sigma)} \\
+&amp;=&amp; \log{\prod_{i=1}^m p(x^{(i)}|y^{(i)};\mu_0,\mu_1,\Sigma)p(y^{(i)};\phi)}
+\end{eqnarray}$$</code></p>
+
+<p>求 <code>$l$</code> 的极大值我们有：</p>
+
+<p><code>$$\begin{eqnarray}
+\phi &amp;=&amp; \frac{1}{m}\sum_{i=1}^m1\{y^{(i)}=1\} \\
+\mu_0 &amp;=&amp; \frac{\sum_{i=1}^m1\{y^{(i)}=0\}x^{(i)}}{\sum_{i=1}^m1\{y^{(i)}=0\}} \\
+\mu_1 &amp;=&amp; \frac{\sum_{i=1}^m1\{y^{(i)}=1\}x^{(i)}}{\sum_{i=1}^m1\{y^{(i)}=1\}} \\
+\Sigma &amp;=&amp; \frac{1}{m}\sum_{i=1}^{m}(x^{(i)}-\mu_{y^{(i)}})(x^{(i)}-\mu_{y^{(i)}})^T
+\end{eqnarray}$$</code></p>
+
+<h2 id="讨论-gda-和逻辑回归">讨论：GDA 和逻辑回归</h2>
+
+<p>总的来说 GDA 需要我们对数据做大胆的假设，而且学习效率高，不需要有很多的样本。只要我们对于样本分布的假设是正确的，GDA 的表现比逻辑回归好很多。</p>
+
+<p>相比较而言逻辑回归不需要我们做出什么假设，鲁棒性也更高。而且相对应的，如果样本确实不符合高斯分布的特征，那么逻辑回归肯定就要强于 GDA 了。</p>
+
+<h1 id="朴素贝叶斯">朴素贝叶斯</h1>
+
+<p>现在我们来考虑样本中的变量是离散的情况，比如我们现在要做一个垃圾邮件的分类器：是垃圾邮件或不是。这可以算做是众多 <code>文本分类</code> 问题中的一个。</p>
+
+<p>我们用一个长度等于我们词典容量的特征向量来表示我们的样本，每一位对应词典中的一个单词。如果某邮件中有词典中的某个词，那对应的这一位就是 1 ， 反之就是 0 。</p>
+
+<p>我们可以开始对 <code>$p(x|y)$</code> 建模了。但有一个关于向量长度的问题。如果我们的词典中有 50000 个单词，那么我们模型里的参数就得有 <code>$2^{50000}-1$</code> 个，这显然太多了。</p>
+
+<p>这里我们做一个非常大胆的假设：所有的 <code>$x_i$</code> 的概率都是独立的。这个假设叫做 <code>朴素贝叶斯假设</code> ，基于这个假设的分类器就叫做 <code>朴素贝叶斯分类器</code> 。所以我们就有：</p>
+
+<p><code>$$p(x_1,...,x_50000|y)=\prod_{i=1}^n{p(x_i|y)}$$</code></p>
+
+<p>模型里的三个参数如下：</p>
+
+<p><code>$$\begin{eqnarray}
+\phi_{i|y=1} &amp;=&amp; p(x_i=1|y=1) \\
+\phi_{i|y=0} &amp;=&amp; p(x_i=1|y=0) \\
+\phi_y &amp;=&amp; p(y=1)
+\end{eqnarray}$$</code></p>
+
+<p>写出数据的联合似然概率如下：</p>
+
+<p><code>$$\mathcal{L}(\phi_y,\phi_{j|y=0},\phi_{j|y=1})=\prod_{i=1}^m{p(x^{(i)},y^{(i)})}$$</code></p>
+
+<p>求极大值后得到：</p>
+
+<p><code>$$\begin{eqnarray}
+\phi_{j|y=1} &amp;=&amp; \frac{\sum_{i=1}^m{1\{x_j^{(i)}=1 \wedge y^{(i)}=1\}}}{\sum_{i=1}^m{1\{y^{(i)}=1\}}} \\
+\phi_{j|y=0} &amp;=&amp; \frac{\sum_{i=1}^m{1\{x_j^{(i)}=1 \wedge y^{(i)}=0\}}}{\sum_{i=1}^m{1\{y^{(i)}=0\}}} \\
+\phi_y &amp;=&amp; \frac{\sum_{i=1}^m{1\{y^{(i)}=1\}}}{m}
+\end{eqnarray}$$</code></p>
+
+<p>求出上面的所有参数之后，就可以对一个新的样本进行预测了，只需要计算：</p>
+
+<p><code>$$\begin{eqnarray}
+p(y=1|x) &amp;=&amp; \frac{p(x|y=1)p(y=1)}{p(x)} \\
+&amp;=&amp; \frac{(\prod_{i=1}^n{p(x_i|y=1)})p(y=1)}{(\prod_{i=1}^n{p(x_i|y=1)})p(y=1)+(\prod_{i=1}^n{p(x_i|y=0)})p(y=0)}
+\end{eqnarray}$$</code></p>
+
+<p>然后看样本在哪类中的后验概率更高就可以了。</p>
+
+<h2 id="laplace-平滑">Laplace 平滑</h2>
+
+<p>考虑训练样本中没有出现过词典中某个词的情况。比如词典中的第 35000 个词 <code>膜法</code> 在所有的训练样本中都没有出现过，那么它的 <code>$\phi_{y=1}$</code> 和 <code>$\phi_{y=0}$</code> 都将会是 0 。所以如果我们之后做分类时输入的样本中出现了 <code>膜法</code> 这个词的话，会出现 <code>$p(y=1|x)=\frac{0}{0}$</code> 的情况，这显然是不符合逻辑的。</p>
+
+<p>所以需要使用 <code>Laplace 平滑</code> 来计算 <code>$\phi_j$</code> ：</p>
+
+<p><code>$$\phi_j=\frac{\sum_{i=1}^m{1\{z^{(i)}=j\}+1}}{m+k}$$</code></p>
+
+<p>其中 <code>$k$</code> 是 <code>$y$</code> 可能的结果的数量，拿之前垃圾邮件分类的例子来说，因为结果只有两类，是垃圾邮件或者不是，所以 <code>$k=2$</code>。</p>
+
+<h2 id="文本分类的事件模型">文本分类的事件模型</h2>
+
+<p>还是用垃圾邮件分类的例子，<code>多项式事件模型</code> 认为一封邮件需要首先被发件人定义为是不是垃圾邮件。然后发件人开始确定第一个词 <code>$x_1$</code> ，并且事件符合一个多项式分布 <code>$p(x_i|y)$</code> 。然后他重复该过程直到写出了 <code>$n$</code> 个词，完成了邮件。所以这封邮件出现的概率就是 <code>$\prod_{i=1}^n{p(x_i|y)}$</code> 。</p>
+
+<p>所以对有 <code>$m$</code> 个样本的训练集，数据的相似度就是：</p>
+
+<p><code>$$\mathcal{L}(\phi,\phi_{k|y=0},\phi_{k|y=1})=\prod_{i=1}^m{(\prod_{j=1}^{n_i}{p(x_j^{(i)}|y;\phi_{k|y=0},\phi_{k|y=1})})p(y^{(i)};\phi_y)}$$</code></p>
+
+<p>最大化上式并应用 Laplace 平滑后，可以得到：</p>
+
+<p><code>$$\begin{eqnarray}
+\phi_{k|y=1} &amp;=&amp; \frac{\sum_{i=1}^m\sum_{j=1}^{n_i}{1\{x_j^{(i)}=k{\wedge}y^{(i)}=1\}+1}}{\sum_{i=1}^m{1\{y^{(i)}=1\}n_i+|V|}} \\
+\phi_{k|y=0} &amp;=&amp; \frac{\sum_{i=1}^m\sum_{j=1}^{n_i}{1\{x_j^{(i)}=k{\wedge}y^{(i)}=0\}+1}}{\sum_{i=1}^m{1\{y^{(i)}=0\}n_i+|V|}} \\
+\phi_y &amp;=&amp; \frac{\sum_{i=1}^m{1\{y^{(i)}=1\}}}{m}
+\end{eqnarray}$$</code></p>
+
+<p>由于我们现在求 <code>$\phi$</code> 是建立在单词为单元的基础之上的，所以应用 Laplace 平滑分母加上的值应该是我们词典的大小，也就是 <code>$|V|$</code> 的含义。</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

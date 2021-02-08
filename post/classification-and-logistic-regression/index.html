@@ -1,0 +1,296 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>机器学习 第二章 分类与逻辑回归 &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>机器学习 第二章 分类与逻辑回归</h1>
+                    <h2 class="headline">
+                    February 22, 2017 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/machine-learning">Machine Learning</a>
+                        
+                            <a href="https://knightf.coding.me/tags/stanford-cs229">Stanford CS229</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<p>我们现在来看看分类的问题，只简单考虑 <code>二元分类</code> 的情况，也就是 <code>$y$</code> 只能取值 0 或者 1 。0 代表 <code>否定类</code> ，1 代表 <code>肯定类</code>。对于 <code>$x^{(i)}$</code> 样本，对应的 <code>$y^{(i)}$</code> 就是对应的 <code>标记</code> 。</p>
+
+<h1 id="逻辑回归">逻辑回归</h1>
+
+<p>直观地看，我们的 <code>$h_\theta(x)$</code> 现在肯定是只能输出 0 到 1 之间的值：</p>
+
+<p><code>$$h_\theta(x)=g(\theta^Tx)=\frac{1}{1+e^{-\theta^Tx}}$$</code></p>
+
+<p>里面的 <code>$g(z)$</code> 等于：</p>
+
+<p><code>$$g(z)=\frac{1}{1+e^{-z}}$$</code></p>
+
+<p>这个函数叫做 <code>逻辑函数</code> (logistic function) 或者 <code>S函数</code> (sigmoid function)。和以前一样我们默认 <code>$x_0=1$</code> ，就可以让 <code>$\theta^Tx=\theta_0+\sum_{j=1}^n\theta_jx_j$</code> 。然后我们也可以先求出 <code>S函数</code> 的导数：</p>
+
+<p><code>$$g'(z)=g(z)(1-g(z))$$</code></p>
+
+<p>那我们怎么找到合适的 <code>$\theta$</code> 值呢？我们不妨借鉴之前使用最大似然法求出成本函数的方法，先写出一些概率上的假设：</p>
+
+<p><code>$$\begin{eqnarray}
+P(y=1|x;\theta) &amp;=&amp; h_\theta(x) \\
+P(y=0|x;\theta) &amp;=&amp; 1-h_\theta(x)
+\end{eqnarray}$$</code></p>
+
+<p>这个概率分布就可以被写成：</p>
+
+<p><code>$$p(y|x;\theta)=(h_\theta(x))^y(1-h_\theta(x))^{1-y}$$</code></p>
+
+<p>所以我们就可以写出相似度函数如下：</p>
+
+<p><code>$$\begin{eqnarray}
+L(\theta) &amp;=&amp; p(\vec{y}|X;\theta) \\ 
+&amp;=&amp; \prod_{i=1}^mp(y^{(i)}|x^{(i)};\theta) \\
+&amp;=&amp; \prod_{i=1}^m(h_\theta(x^{(i)}))^{y^{(i)}}(1-h_\theta(x^{(i)}))^{1-y^{(i)}}
+\end{eqnarray}$$</code></p>
+
+<p>和之前一样，写出对数相似度函数：</p>
+
+<p><code>$$\begin{eqnarray}
+l(\theta) &amp;=&amp; \log{L(\theta)} \\
+&amp;=&amp; \sum_{i=1}^my^{(i)}\log{h(x^{(i)})}+(1-y^{(i)})\log{(1-h(x^{(i)}))}
+\end{eqnarray}$$</code></p>
+
+<p>同理我们如果最大化这个对数相似度函数，也可以采用梯度方法，只不过这次是梯度上升：<code>$\theta:=\theta+\alpha\nabla_\theta l(\theta)$</code> 。下面我们针对某一对样本 <code>$(x, y)$</code> 进行求导可以得到：</p>
+
+<p><code>$$\frac{\partial}{\partial\theta_j}l(\theta)=(y-h_\theta(x))x_j$$</code></p>
+
+<p>所以我们就得到了随机梯度上升的更新规则：</p>
+
+<p><code>$$\theta_j:=\theta_j+\alpha(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$$</code></p>
+
+<h1 id="题外话-感知器学习算法">题外话：感知器学习算法</h1>
+
+<p>考虑我们现在如果希望假设函数只输出 0 或 1 ，那么我们的 <code>$g(z)$</code> 函数肯定要做出修改如下：</p>
+
+<p><code>$$
+g(z)=
+\begin{cases}
+1, &amp; \text{if $z\geq0$} \\
+0, &amp; \text{if $z&lt;0$}
+\end{cases}
+$$</code></p>
+
+<p>然后我们让 <code>$h_\theta(x)=g(\theta^Tx)$</code> ，并且使用下面的更新规则：</p>
+
+<p><code>$$\theta_j:=\theta_j+\alpha(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$$</code></p>
+
+<p>我们就得到了 <code>感知器学习算法</code> (perceptron learning algorithm) 。虽然它看起来很像是我们之前讨论过的算法，但值得注意的是它其实是不能通过最大似然估计得到推导的，这一点很独特。</p>
+
+<h1 id="牛顿方法">牛顿方法</h1>
+
+<p>最大化对数似然函数 <code>$l(\theta)$</code> 还有一种方法叫做牛顿方法 (Newton&rsquo;s method)。对于某个实数函数有如下更新规则：</p>
+
+<p><code>$$\theta:=\theta-\frac{f(\theta)}{f'(\theta)}$$</code></p>
+
+<p>可以看出来这个方法背后的含义就是用这个实数函数在某一点的斜率构造一个一次函数然后不断逼近这个函数值为 0 的位置。那么如果要用这个方法来帮助我们最大化对数似然函数，自然就是这样的更新规则：</p>
+
+<p><code>$$\theta:=\theta-\frac{l'(\theta)}{l''(\theta)}$$</code></p>
+
+<p>在我们的逻辑回归里，<code>$\theta$</code> 是一个向量。所以我们要稍稍扩展一下牛顿方法，使其可以支持多维的数据：</p>
+
+<p><code>$$\theta:=\theta-H^{-1}\nabla_\theta l(\theta)$$</code></p>
+
+<p>这个式子里面 <code>$\nabla_\theta l(\theta)$</code> 和之前一样是函数 <code>$l(\theta)$</code> 对于 <code>$\theta_i$</code> 的偏微分。<code>$H$</code> 则是一个 n 阶的矩阵叫做 <code>海森矩阵</code> ，它的每一个元素按照下面的规则确定：</p>
+
+<p><code>$$H_{ij}=\frac{\partial^2 l(\theta)}{\partial\theta_i\partial\theta_j}$$</code></p>
+
+<p>牛顿方法通常比起批量梯度下降来说更快达到收敛。但其实每一步的代价更高，因为我们要对海森矩阵求逆。但如果 n 的值不是很大的话，总体来说还是会更快的。</p>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

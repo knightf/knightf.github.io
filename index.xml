@@ -1,0 +1,2432 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>韩飞的博客</title>
+    <link>https://knightf.coding.me/index.xml</link>
+    <description>Recent content on 韩飞的博客</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <lastBuildDate>Tue, 04 Jul 2017 18:01:00 +0800</lastBuildDate>
+    <atom:link href="https://knightf.coding.me/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>机器学习 第十三章 强化学习与控制</title>
+      <link>https://knightf.coding.me/post/reinforcement-learning-and-control/</link>
+      <pubDate>Tue, 04 Jul 2017 18:01:00 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/reinforcement-learning-and-control/</guid>
+      <description>
+
+&lt;p&gt;可以成功应用强化学习的问题有直升机自动驾驶、机器人下肢平衡、手机网络路由和市场策略选择等等。先提出 &lt;code&gt;马尔可夫决策过程&lt;/code&gt; (Markov decision processes) 这个定义来规范化的描述强化学习要解决的问题。&lt;/p&gt;
+
+&lt;h2 id=&#34;马尔可夫决策过程&#34;&gt;马尔可夫决策过程&lt;/h2&gt;
+
+&lt;p&gt;马尔可夫决策过程是一个五元组 &lt;code&gt;$(S, A, \{P_{sa}\}, \gamma, R)$&lt;/code&gt; ，其中：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$S$&lt;/code&gt; 是 &lt;code&gt;状态&lt;/code&gt; 的集合。例如在直升机自动驾驶问题中，它包含了直升机可能的三维空间位置与朝向。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$A$&lt;/code&gt; 是 &lt;code&gt;动作&lt;/code&gt; 的集合。例如直升机可能前往的所有方向。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$P_{sa}$&lt;/code&gt; 是状态转换概率。对所有 &lt;code&gt;$s \in S$&lt;/code&gt; 和 &lt;code&gt;$a \in A$&lt;/code&gt; ， &lt;code&gt;$P_{sa}$&lt;/code&gt; 是一个在状态空间上的概率分布。简单的说，它可以表示在状态 &lt;code&gt;$s$&lt;/code&gt; 中执行动作 &lt;code&gt;$a$&lt;/code&gt; 转换到其他状态的概率。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$\gamma\in [0,1)$&lt;/code&gt; 叫做 &lt;code&gt;折扣因子&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$R : S \times A \rightarrow \mathbb{R}$&lt;/code&gt; 是奖励函数。有时它也许只与状态有关。&lt;/p&gt;
+
+&lt;p&gt;系统从状态 &lt;code&gt;$s_{0}$&lt;/code&gt; 开始，不断的从动作集合中选择一个动作 &lt;code&gt;$a_{0}$&lt;/code&gt; 执行决策过程。执行动作后系统就会从之前的状态根据 &lt;code&gt;$s_{1} \sim P_{s_{0}a_{0}}$&lt;/code&gt; 的概率进行状态转换。不断进行这样的状态转换，就能够根据形成的序列计算出总的收益 (如果奖励函数只与状态有关，则没有 &lt;code&gt;$a$&lt;/code&gt;)：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$R(s_{0}, a_{0}) + \gamma R(s_{1}, a_{1}) + \gamma^{2} R(s_{2}, a_{2}) + \cdots$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;对于一般的问题而言，通常采用更简单的奖励函数 &lt;code&gt;$R(s)$&lt;/code&gt; 。而强化学习要解决的，就是能够选择出一定的动作来最大化总收益的期望：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$E[R(s_0)+\gamma R(s_1)+\gamma^2 R(s_2)+\cdots]$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;注意时间 &lt;code&gt;$t$&lt;/code&gt; 时的奖励值被因子 &lt;code&gt;$\gamma^{t}$&lt;/code&gt; 打了 &lt;code&gt;折扣&lt;/code&gt; ，所以可见正收益越早发生越好，负收益留到越晚越好。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;策略&lt;/code&gt; 是映射状态到动作的函数 &lt;code&gt;$\pi : S \rightarrow A$&lt;/code&gt; 。 &lt;code&gt;执行&lt;/code&gt; 某策略就意味着只要在状态 &lt;code&gt;$s$&lt;/code&gt; 下就选择动作 &lt;code&gt;$a = \pi(s)$&lt;/code&gt; 。同时定义策略 &lt;code&gt;$\pi$&lt;/code&gt; 的 &lt;code&gt;价值函数&lt;/code&gt; 为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$V^{\pi}(s) = E[R(s_0)+\gamma R(s_1)+\gamma^2 R(s_2)+\cdots|s_0 =s, \pi]$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;给定策略 &lt;code&gt;$\pi$&lt;/code&gt; ，它的价值函数 &lt;code&gt;$V^{\pi}$&lt;/code&gt; 满足 &lt;code&gt;贝尔曼方程&lt;/code&gt; (动态规划方程) ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$V^{\pi}(s)=R(s)+\gamma \sum_{s&#39;\in S}{P_{s\pi(s)}{(s&#39;)V^{\pi}(s&#39;)}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;上式说明由状态 &lt;code&gt;$s$&lt;/code&gt; 作为起点的收益期望总和由两部分组成：&lt;/p&gt;
+
+&lt;p&gt;一是我们从起点开始的 &lt;code&gt;即时收益&lt;/code&gt; &lt;code&gt;$R(s)$&lt;/code&gt; ，二是未来产生的折扣收益总和。仔细观察第二项，发现可改写为 &lt;code&gt;$E_{s&#39;\sim P_{s\pi(s)}}{[V^{\pi}(s&#39;)]}$&lt;/code&gt; ，也就是以状态 &lt;code&gt;$s&#39;$&lt;/code&gt; 为起点所有折扣收益的期望总和，并且 &lt;code&gt;$s&#39;$&lt;/code&gt; 按照 &lt;code&gt;$P_{s\pi(s)}$&lt;/code&gt; 分布。根据贝尔曼方程的递归特性，可以简单的求解 &lt;code&gt;$V^{\pi}$&lt;/code&gt; 的值。&lt;/p&gt;
+
+&lt;p&gt;定义 &lt;code&gt;$最优价值函数$&lt;/code&gt; 为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+V^{*}(s) &amp;amp;=&amp;amp; \max_{\pi}{V^{\pi}(s)} \tag{1} \\
+&amp;amp;=&amp;amp; R(s)+\max_{a \in A}{\gamma \sum_{s&#39; \in S}{P_{sa}(s&#39;)V^{*}(s&#39;)}} \tag{2}
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;同时定义 &lt;code&gt;$最优策略$&lt;/code&gt; 为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\pi^{*}(s)=\arg\max_{a \in A}{P_{sa}(s&#39;)V^{*}(s&#39;)} \tag{3}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;通过观察不难发现最优策略不论在何种状态下都是同一个策略，不会根据所处状态的不同而变化。&lt;/p&gt;
+
+&lt;h2 id=&#34;价值迭代和策略迭代&#34;&gt;价值迭代和策略迭代&lt;/h2&gt;
+
+&lt;p&gt;求解有限状态的马尔可夫决策过程的第一种方法 &lt;code&gt;$价值迭代$&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;对于所有 &lt;code&gt;$s$&lt;/code&gt; 都初始化 &lt;code&gt;$V(s)$&lt;/code&gt; 为 0&lt;/li&gt;
+&lt;li&gt;收敛前：对每个状态 &lt;code&gt;$V(s):=R(s)+\max_{a \in A}{\gamma \sum_{s&#39;}{P_{sa}(s&#39;)V(s&#39;)}}$&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;通过这种方法，可以得到 &lt;code&gt;$V^*$&lt;/code&gt; 的值并利用式子3得到最优策略。第二种方法 &lt;code&gt;$策略迭代$&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;随机生成策略 &lt;code&gt;$\pi$&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;收敛前：令 &lt;code&gt;$V:=V^{\pi}$&lt;/code&gt; ，然后对每个状态 &lt;code&gt;$\pi(s):=\arg\max_{a \in A}{\gamma \sum_{s&#39;}{P_{sa}(s&#39;)V(s&#39;)}}$&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;对于拥有较大状态空间的马尔可夫决策过程，使用价值迭代方法更简便；反之策略迭代则更适合小型问题。&lt;/p&gt;
+
+&lt;h2 id=&#34;为马尔可夫决策建模&#34;&gt;为马尔可夫决策建模&lt;/h2&gt;
+
+&lt;p&gt;现实情况中，状态转换概率和奖励函数大多都没有现成可用的值，而是需要从数据中找到估计值。假设我们可以不断的观察一个已有的系统中的数据，重复试验状态不断转换的过程，那么可以用实际观测到的数据来得到状态转换的概率：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$P_{sa}(s&#39;)=\frac{状态 s 下，采取行动 a 并转移到了状态 s&#39; 的次数}{状态 s 下，采取行动 a 的次数} \tag{4}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;如果都没有能观测到足够的数据发生了 &lt;code&gt;$\frac{0}{0}$&lt;/code&gt; 的情况，则可以使用 &lt;code&gt;$1/|S|$&lt;/code&gt; 来近似。而重复试验的次数越多，数据拟合的程度也就越高。同理，奖励函数也可以通过观测不断更新。&lt;/p&gt;
+
+&lt;p&gt;结合之前提到的价值迭代方法，可以一边实验一边更新最优价值函数与最优策略。首先随机生成一个策略 &lt;code&gt;$\pi$&lt;/code&gt;，然后不断重复以下过程：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;以 &lt;code&gt;$\pi$&lt;/code&gt; 为策略，执行若干次马尔可夫决策过程&lt;/li&gt;
+&lt;li&gt;通过积累到的数据更新 &lt;code&gt;$P_{sa}$&lt;/code&gt; (和 &lt;code&gt;$R$&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;以新的状态转换概率值和奖励函数，用价值迭代算法更新价值函数&lt;/li&gt;
+&lt;li&gt;基于新的价值函数，用贪心算法求得新的策略 &lt;code&gt;$\pi$&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;连续状态马尔可夫决策过程&#34;&gt;连续状态马尔可夫决策过程&lt;/h2&gt;
+
+&lt;p&gt;状态空间 &lt;code&gt;$S=\mathbb{R}^{n}$&lt;/code&gt; 如果是连续的话，将不能明确指出具体状态的值。&lt;/p&gt;
+
+&lt;h3 id=&#34;离散化&#34;&gt;离散化&lt;/h3&gt;
+
+&lt;p&gt;离散化通过分段把连续状态空间分成多个独立的状态。这样做虽然很简单，但是有两个很明显的不足。第一是每一个区间都把一些连续的状态值近似到了一个特定的值，所以它们原始对应的价值函数结果各不相同却被强行统一了，这便会对价值函数的结果产生影响。第二是状态维度数目的问题，如果表示状态的向量维度很高，那么如果把 &lt;code&gt;$n$&lt;/code&gt; 个维度都离散入 &lt;code&gt;$k$&lt;/code&gt; 个值，那么总的状态数目就有 &lt;code&gt;$k^n$&lt;/code&gt; 导致很难计算。&lt;/p&gt;
+
+&lt;p&gt;所以离散化可以很好的解决低维度的简单问题，而对于复杂的问题并不合适。&lt;/p&gt;
+
+&lt;h3 id=&#34;价值函数近似&#34;&gt;价值函数近似&lt;/h3&gt;
+
+&lt;h4 id=&#34;使用模拟器&#34;&gt;使用模拟器&lt;/h4&gt;
+
+&lt;p&gt;模拟器可以根据输入的 &lt;code&gt;$s_t$&lt;/code&gt; 和 &lt;code&gt;$a_t$&lt;/code&gt; ，依据状态转换概率分布 &lt;code&gt;$P_{s_t a_t}$&lt;/code&gt; 生成下一个状态 &lt;code&gt;$s_{t+1}$&lt;/code&gt; 。有很多种方法可以生成一个模拟器。&lt;/p&gt;
+
+&lt;p&gt;一种方法是通过类似物理定律之类的关系来直接计算得到后续的状态。不论是通过公式推导还是一些模拟的软件都可以得到这个固定的模拟器，因为系统就是按照一定的规律运作的。&lt;/p&gt;
+
+&lt;p&gt;另一种方法是通过学习收集到的数据。比如选择以下类似线性回归的模拟器：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$s_{t+1}=As_t+Ba_t \tag{5}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这样这个模拟器中的参数就是方程 &lt;code&gt;$A$&lt;/code&gt; 和 &lt;code&gt;$B$&lt;/code&gt; 。如记录了 &lt;code&gt;$m$&lt;/code&gt; 次决策过程，则有下式为最优解：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\arg\min_{A,B}\sum_{i=1}^m\sum_{t=0}^{T-1}{||s_{t+1}^{(i)}-\left(As_{t}^{(i)}+Ba_{t}^{(i)}\right)||}^2$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;学习后得到所有参数后，可以直接构建 &lt;code&gt;$确定$&lt;/code&gt; 模型，也就是说只使用学习到的参数和它构成的表达式得到结果。也可以用这些参数构建一个 &lt;code&gt;$随机$&lt;/code&gt; 模型，它的表达式如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$s_{t+1}=As_t+Ba_t+\epsilon_t$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;唯一和确定模型不同的就是后面多了噪音项。通常这一项符合均值为0的高斯分布，并且这个高斯分布的协方差矩阵可以直接由数据学习得到。&lt;/p&gt;
+
+&lt;p&gt;以上是通过拟合了一个线性回归的模型来得到模拟器，其他种类的模型也可以。&lt;/p&gt;
+
+&lt;h4 id=&#34;近似价值迭代&#34;&gt;近似价值迭代&lt;/h4&gt;
+
+&lt;p&gt;&lt;code&gt;近似价值迭代&lt;/code&gt; (fitted value iteration) 算法可以用在连续状态空间的马尔可夫决策过程中不断逼近价值函数以得到近似值。前提是状态空间连续，但是动作空间是一定的。理想化的表达连续情况下价值迭代的过程如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+V(s) &amp;amp;:=&amp;amp; R(s)+\gamma\max_{a}\int_{s&#39;}P_{sa}(s&#39;)V(s&#39;)ds&#39; \tag{6} \\
+&amp;amp;:=&amp;amp; R(s)+\gamma\max_{a}E_{s&#39;\sim P_{sa}}[V(s&#39;)] \tag{7}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;近似价值迭代逼近了这整个积分的结果。具体来说在这里先使用线性回归这种监督学习算法作为例子：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$V(s)=\theta^T\phi(s)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$\phi$&lt;/code&gt; 是从状态到特征的映射。&lt;/p&gt;
+
+&lt;p&gt;取样出 &lt;code&gt;$m$&lt;/code&gt; 个样本状态，对于每一个状态，近似价值迭代算法会先计算出 &lt;code&gt;$y^{(i)}$&lt;/code&gt; ，也就是式子7中右侧的数值。然后应用监督学习算法来让 &lt;code&gt;$V(s)$&lt;/code&gt; 靠近 &lt;code&gt;$R(s)+\gamma\max_{a}E_{s&#39;\sim P_{sa}}[V(s&#39;)]$&lt;/code&gt; (也就是 &lt;code&gt;$y^{(i)}$&lt;/code&gt;) 。&lt;/p&gt;
+
+&lt;p&gt;详细的算法内容如下：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;随机从状态空间 &lt;code&gt;$S$&lt;/code&gt; 中取 &lt;code&gt;$m$&lt;/code&gt; 个样本 &lt;code&gt;$s^{(1)}, s^{(2)}, \ldots s^{(m)}$&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;初始化 &lt;code&gt;$\theta$&lt;/code&gt; 为 0&lt;/li&gt;
+&lt;li&gt;重复以下步骤 {&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;对 &lt;code&gt;$i=1,\ldots,m$&lt;/code&gt; {&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;对每个 &lt;code&gt;$a \in A$&lt;/code&gt; {&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;取样 &lt;code&gt;${s&#39;}_1,\ldots,{s&#39;}_k \sim P_{s^{(i)}a}$&lt;/code&gt; (用之前讲的模拟器)&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;code&gt;$q(a)=\frac{1}{k}\sum_{j=1}^{k}{R(s^{(i)})+\gamma V({s&#39;}_j)}$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;em&gt;// &lt;code&gt;$q(a)$&lt;/code&gt; 是对 &lt;code&gt;$R(s)+\gamma E_{s&#39;\sim P_{sa}}[V(s&#39;)]$&lt;/code&gt; 的估计&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;}&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;code&gt;$y^{(i)}=max_{a}q(a)$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;em&gt;// &lt;code&gt;$y^{(i)}$&lt;/code&gt; 是对 &lt;code&gt;$R(s)+\gamma\max_{a}E_{s&#39;\sim P_{sa}}[V(s&#39;)]$&lt;/code&gt; 的估计&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;}&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;&lt;em&gt;//在原来离散状态空间问题的价值迭代中&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;&lt;em&gt;//新一轮的价值函数是直接赋值的 &lt;code&gt;$V(s^{(i)}):=y^{(i)}$&lt;/code&gt;&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;&lt;em&gt;//但现在连续状态空间中上面的值不是等价的，只能是近似&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;&lt;em&gt;//也就是使用监督学习算法所要解决的问题&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&amp;nbsp;&amp;nbsp;&lt;code&gt;$\theta:=\arg\min_{\theta}{\frac{1}{2}\sum_{i=1}^{m}(\theta^T \phi(s^{(i)})-y^{(i)})^2}$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;}&lt;/p&gt;
+
+&lt;p&gt;上面算法中更新 &lt;code&gt;$\theta$&lt;/code&gt; 的步骤，是典型的监督学习可以解决的问题。这里 &lt;code&gt;$s$&lt;/code&gt; 即为样本，取样得到的 &lt;code&gt;$y^{(i)}$&lt;/code&gt; 即为结果。与离散情况中的价值迭代不同，上面的算法不能完全保证收敛。但实际情况中表现是不错的。&lt;/p&gt;
+
+&lt;p&gt;值的注意的是，如果模拟器是确定模型，那么上面 &lt;code&gt;$k$&lt;/code&gt; 的取值应该为 1 。因为确定模拟器给出的结果是一定的，所以没有意义取若干样本。最后近似价值迭代给出最优的价值函数，而得到对应的最优策略则还需要计算：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\arg\max_{a}E_{s&#39; \sim P_{sa}}[V(s&#39;)] \tag{8}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;可以发现也需要计算期望，其过程和近似价值迭代算法中取样计算价值函数的过程类似。实际应用中也可以通过一些近似来简化这个计算过程。&lt;/p&gt;
+
+&lt;p&gt;例如采用如 &lt;code&gt;$s_{t+1}=f(s_t, a_t)+\epsilon$&lt;/code&gt; 这样的模拟器，并且其中函数 &lt;code&gt;$f$&lt;/code&gt; 是确定的， &lt;code&gt;$\epsilon$&lt;/code&gt; 是一个均值为 0 的高斯噪声。那么就可以选择这个动作：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\arg\max_{a}V(f(s, a))$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;结合式子 8 可以这样理解得到这个结论的过程：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+E_{s&#39;}[V(s&#39;)] &amp;amp;\approx&amp;amp; V(E_{s&#39;}[s&#39;]) \tag{9} \\
+&amp;amp;=&amp;amp; V(f(s,a)) \tag{10}
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;所以如果噪声的均值为 0 ，那么这个近似是合理的。但是如果问题不符合这样的近似条件，那么对状态空间进行取样计算价值函数的值，可能会花费很多计算成本。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>机器学习 第十二章 独立成分分析</title>
+      <link>https://knightf.coding.me/post/independent-components-analysis/</link>
+      <pubDate>Fri, 02 Jun 2017 16:56:00 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/independent-components-analysis/</guid>
+      <description>
+
+&lt;p&gt;考虑由 &lt;code&gt;$n$&lt;/code&gt; 个独立信号源生成的数据 &lt;code&gt;$s\in\mathbb{R}^{n}$&lt;/code&gt; ，观测到的 &lt;code&gt;$x$&lt;/code&gt; 与这些信号有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$x=As$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中 &lt;code&gt;$A$&lt;/code&gt; 是一个方阵叫做 &lt;code&gt;混合矩阵&lt;/code&gt; (mixing matrix) 。经过一段时间的观测可以得到数据集 &lt;code&gt;$\{x^{(i)};i=1,\ldots,m\}$&lt;/code&gt; 。问题在于对于某一个 &lt;code&gt;$x^{(i)}=As^{(i)}$&lt;/code&gt; 可以还原出 &lt;code&gt;$s^{(i)}$&lt;/code&gt; 。借用鸡尾酒问题中的设定， &lt;code&gt;$s^{(i)}$&lt;/code&gt; 是一个长度为 &lt;code&gt;$n$&lt;/code&gt; 的向量， &lt;code&gt;$s_{j}^{(i)}$&lt;/code&gt; 代表说话者 &lt;code&gt;$j$&lt;/code&gt; 在时间片 &lt;code&gt;$i$&lt;/code&gt; 时发出声音的值。同样的 &lt;code&gt;$x^{(i)}$&lt;/code&gt; 是一个长度为 &lt;code&gt;$n$&lt;/code&gt; 的向量，&lt;code&gt;$x_{j}^{(i)}$&lt;/code&gt; 代表麦克风 &lt;code&gt;$j$&lt;/code&gt; 在时间片 &lt;code&gt;$i$&lt;/code&gt; 时采集到声音的值。&lt;/p&gt;
+
+&lt;p&gt;令 &lt;code&gt;$W=A^{-1}$&lt;/code&gt; 作为 &lt;code&gt;解析矩阵&lt;/code&gt; (unmixing matrix) 。目标是找到 &lt;code&gt;$W$&lt;/code&gt; 还原信号， &lt;code&gt;$s^{(i)}=Wx^{(i)}$&lt;/code&gt; 。为简便符号表示：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$W=\begin{bmatrix}
+w_{1}^{T} \\
+\vdots \\
+w_{n}^{T}
+\end{bmatrix}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中 &lt;code&gt;$w_{i}\in\mathbb{R}^{n}$&lt;/code&gt; ，并且第 &lt;code&gt;$j$&lt;/code&gt; 个音源可以通过计算 &lt;code&gt;$s_{j}^{(i)}=w_{j}^{T}x^{(i)}$&lt;/code&gt; 得到。&lt;/p&gt;
+
+&lt;h2 id=&#34;无法明确的的混淆数据&#34;&gt;无法明确的的混淆数据&lt;/h2&gt;
+
+&lt;p&gt;&lt;code&gt;$x^{(i)}$&lt;/code&gt; 的顺序不能确定。由于只需要调换 &lt;code&gt;$A$&lt;/code&gt; 矩阵中列向量的顺序，就能改变混合信号的顺序，所以信号源的绝对顺序是不能确定的。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$w_{i}$&lt;/code&gt; 的缩放不能确定。因为 &lt;code&gt;$A$&lt;/code&gt; 矩阵可以求得相应其所放的值来抵消掉数值的不一致。&lt;/p&gt;
+
+&lt;p&gt;并且数据源的分布不能是符合高斯分布的。由于高斯分布具有传递性，所以不论 &lt;code&gt;$A$&lt;/code&gt; 中的值是多少，我们都可以观测到同样的值。得到这个结论的理由是多项高斯分布是可以任意旋转的。&lt;/p&gt;
+
+&lt;h2 id=&#34;概率密度分布和它的线性变换&#34;&gt;概率密度分布和它的线性变换&lt;/h2&gt;
+
+&lt;p&gt;抛开上面的题设，思考概率密度函数中发生线性变换时的情况。如果有实数随机变量 &lt;code&gt;$x=As$&lt;/code&gt; ，其中 &lt;code&gt;$A$&lt;/code&gt; 和 &lt;code&gt;$s$&lt;/code&gt; 都是实数。同样取 &lt;code&gt;$W=A^{-1}$&lt;/code&gt; ，那么就可以得到 &lt;code&gt;$s=Wx$&lt;/code&gt; 。直接得到 &lt;code&gt;$p_{x}(x)=p_{s}(Wx)$&lt;/code&gt; 这样的结论是不正确的。&lt;/p&gt;
+
+&lt;p&gt;广义的说，他们之间的概率密度分布关系如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p_{x}(x)=p_{s}(Wx)\cdot|W|$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;理解这个广义关系，可以从球体概率分布与行列式思路入手。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;ica-算法&#34;&gt;ICA 算法&lt;/h2&gt;
+
+&lt;p&gt;假设每个信号源 &lt;code&gt;$s_{i}$&lt;/code&gt; 符合概率分布 &lt;code&gt;$p_{s}$&lt;/code&gt; ，所有信号源的联合分布如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(s)=\prod_{i=1}^{n}p_{s}(s_{i})$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;由于每个信号源之间相互独立，所以可以直接相乘&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;使用之前得到的概率密度分布关系，有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(x)=\prod_{i=1}^{n}p_{s}(w_{i}^{T}x)\cdot|W|$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;现在只需要指定 &lt;code&gt;$p_{s}$&lt;/code&gt; 属于何种概率分布即可。给定一个实数范围内的随机变量 &lt;code&gt;$z$&lt;/code&gt; ，它的累积分布函数 &lt;code&gt;$F$&lt;/code&gt; 的定义是 &lt;code&gt;$F(z_{0})=P(z\leq{z_{0}})=\int_{-\infty}^{z_{0}}{p_{z}(z)dz}$&lt;/code&gt; 。并且 &lt;code&gt;$z$&lt;/code&gt; 的密度分布可以通过对累计分布函数 &lt;code&gt;$F$&lt;/code&gt; 求导得到。&lt;/p&gt;
+
+&lt;p&gt;根据之前的分析，此处不能选择高斯分布。所以默认选择从 0 到 1 递增的 sigmoid 函数 &lt;code&gt;$g(s)=1/(1+e^{-s})$&lt;/code&gt; 。矩阵 &lt;code&gt;$W$&lt;/code&gt; 是模型中的参数，并且应用这种概率分布。给定训练集 &lt;code&gt;$\{x^{(i)};i=1,\ldots,m\}$&lt;/code&gt; ，对数似然函数如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$l(W)=\sum_{i=1}^{m}\left(\sum_{j=1}^{n}\log{g&#39;(w_{j}^{T}x^{(i)})}+\log{|W|}\right)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;以 &lt;code&gt;$W$&lt;/code&gt; 为参数最大化上式，对其求导得到随机梯度下降更新规则：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$W:=W+\alpha\left(
+\begin{bmatrix}
+1-2g(w_{1}^{T}x^{(i)}) \\
+1-2g(w_{2}^{T}x^{(i)}) \\
+\vdots \\
+1-2g(w_{n}^{T}x^{(i)}) \\
+\end{bmatrix}{x^{(i)}}^{T}+(W^{T})^{-1}
+\right)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;得到更新规则用到了 &lt;code&gt;$\nabla_{W}|W|=|W|(W^{-1})^{T}$&lt;/code&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>机器学习 第十一章 主成分分析</title>
+      <link>https://knightf.coding.me/post/principal-components-analysis/</link>
+      <pubDate>Thu, 01 Jun 2017 15:04:00 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/principal-components-analysis/</guid>
+      <description>
+
+&lt;p&gt;因子分析模型中，其实构建隐形变量 &lt;code&gt;$z$&lt;/code&gt; 从某种程度上将 &lt;code&gt;$x$&lt;/code&gt; 从 &lt;code&gt;$n$&lt;/code&gt; 维空间映射到了 &lt;code&gt;$k$&lt;/code&gt; 维更小的子空间中。主成分分析 (Principal Components Analysis) 同样试图将数据空间缩小，试图找到代表特征的子空间。但是主成分分析更加直接并且只需要计算矩阵的特征向量就可以，不需要再应用较为复杂的 EM算法 。&lt;/p&gt;
+
+&lt;p&gt;而且有时也可能出现数据冗余的情况，例如几个特征可能都是线性相关的，对模型的描述没有实际意义。 PCA 同样可以解决这样的问题。 PCA 的预处理过程一般包括：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;令 &lt;code&gt;$\mu=\frac{1}{m}\sum_{i=1}^{m}x^{(i)}$&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;用 &lt;code&gt;$x^{(i)}-\mu$&lt;/code&gt; 替换 &lt;code&gt;$x^{(i)}$&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;令 &lt;code&gt;$\sigma_{j}^{2}=\frac{1}{m}\sum_{i}{x_{j}^{(i)}}^{2}$&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;用 &lt;code&gt;$x_{j}^{(i)}/\sigma_{j}$&lt;/code&gt; 替换 &lt;code&gt;$x_{j}^{(i)}$&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;前两步除掉了所有平均值的成分，后两步把所有方差考虑进去做了缩放，所有值都缩放到了同样的范围内。如果对数据有一定的了解那么后两步也可以跳过，比如对于用 RGB 数值的图片，它的值都是在 0~255 之间。&lt;/p&gt;
+
+&lt;p&gt;现在如何找到数据中的主成分呢？也就是大概约束数据空间的向量 &lt;code&gt;$u$&lt;/code&gt; 是多少呢？&lt;strong&gt;主要的目的，是找到一个向量，所有的数据都在这个向量的方向上投影过后得到的结果，其方差是最大的。&lt;/strong&gt;这样就可以找到一个子空间，最有效的表述数据的特征。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://knightf.coding.me/images/principal-components-analysis-pic1.jpg&#34; alt=&#34;不同向量空间下的投影&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;上图可以看出同样的数据集，投影到不同的向量空间后得到的点集，有着不同的方差。主成分分析就是试图找到类似图a中的向量。对于向量 &lt;code&gt;$u$&lt;/code&gt; ，样本 &lt;code&gt;$x$&lt;/code&gt; 在该向量空间上的投影结果距离原点的距离为 &lt;code&gt;$x^{T}u$&lt;/code&gt; 。所以目标可以描述为求一个单位向量 &lt;code&gt;$u$&lt;/code&gt; ，令下面的式子取到最大值：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+\frac{1}{m}\sum_{i=1}^{m}({x^{(i)}}^{T}u)^{2} &amp;amp;=&amp;amp; \frac{1}{m}\sum_{i=1}^{m}u^{T}x^{(i)}{x^{(i)}}^{T}u \\
+&amp;amp;=&amp;amp; u^{T}\left(\frac{1}{m}\sum_{i=1}^{m}x^{(i)}{x^{(i)}}^{T}\right)u
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;可见求最大值的过程是求协方差矩阵特征向量的过程。&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;使用拉格朗日算子求解这个有限制的极值问题会得到 &lt;code&gt;$\Sigma{u}=\lambda{u}$&lt;/code&gt;，表明 &lt;code&gt;$u$&lt;/code&gt; 是协方差矩阵的特征向量。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;所以如果要找一个 1 维的子空间来近似数据集那么就要选择协方差公式的主特征向量；同样的，如果要找一个 &lt;code&gt;$k$&lt;/code&gt; 维的子空间 (&lt;code&gt;$k&amp;lt;n$&lt;/code&gt;) 来近似数据集，那么就要选择协方差矩阵的前 &lt;code&gt;$k$&lt;/code&gt; 个特征向量作为 &lt;code&gt;$u_1,\ldots,u_k$&lt;/code&gt; 。这些 &lt;code&gt;$u_i&#39;s$&lt;/code&gt; 代表了相互正交的空间基础。那么要基于这些基础表示 &lt;code&gt;$x^{(i)}$&lt;/code&gt; ，需要计算对应的向量：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+y^{(i)} =
+\begin{bmatrix}
+u_{1}^{T}x^{(i)} \\
+u_{2}^{T}x^{(i)} \\
+\vdots \\
+u_{k}^{T}x^{(i)}
+\end{bmatrix} \in \mathcal{R}^{k}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;因此主成分分析法也同样被称为降维算法。&lt;code&gt;$u_1,\ldots,u_k$&lt;/code&gt; 被叫做数据集的前 &lt;code&gt;$k$&lt;/code&gt; 个主成分。&lt;/p&gt;
+
+&lt;p&gt;主成分分析有许多应用。首先，其压缩数据维度的功能可以将高维度的数据降维，方便绘制出图像。其次，也可以在训练监督学习时减少输入数据的维度，减少计算量，避免过拟合。最后它也可以减少数据中的噪音，例如解决面部识别问题时，大小为 100*100 的图像需要 10000 维的向量表示，通过主成分分析可以减少维度得到 &lt;code&gt;特征脸&lt;/code&gt; 进行有效的面部相似比较。&lt;/p&gt;
+
+&lt;h2 id=&#34;奇异值分解&#34;&gt;奇异值分解&lt;/h2&gt;
+
+&lt;p&gt;&lt;code&gt;$m\times{n}$&lt;/code&gt; 大小的样本空间对应的协方差矩阵大小为 &lt;code&gt;$n\times{n}$&lt;/code&gt; 。由于协方差矩阵是对阵矩阵，所以它是可对角化的：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\Sigma=VLV^{-1}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中 &lt;code&gt;$V$&lt;/code&gt; 是包含特征向量的矩阵，矩阵的每一列代表一个特征向量。 &lt;code&gt;$L$&lt;/code&gt; 是包含特征值的对角矩阵，它对角线上的值对应每个特征向量按照降序排列。而如果直接对样本构成的矩阵 &lt;code&gt;$X\in\mathbb{R}^{m\times{n}}$&lt;/code&gt; 进行奇异值分解 (singular value decomposition) ，可以得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$X=USV^{T}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中 &lt;code&gt;$U\in\mathbb{R}^{m\times{m}}$&lt;/code&gt; ， &lt;code&gt;$S\in\mathbb{R}^{m\times{n}}$&lt;/code&gt; ， &lt;code&gt;$V^{T}\in\mathbb{R}^{n\times{n}}$&lt;/code&gt; 。&lt;code&gt;$U$&lt;/code&gt; 是酉矩阵。 &lt;code&gt;$S$&lt;/code&gt; 是对角矩阵，对角线上的值是矩阵的奇异值。所以有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\Sigma=\frac{VSU^{T}USV^{T}}{n-1}=V\frac{S^{2}}{n-1}V^{T}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;所以通过奇异值分解得到的 &lt;code&gt;$V$&lt;/code&gt; 就是包含特征向量的矩阵。可以通过奇异值分解，进行高纬度的主成分分析。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>机器学习 第十章 因子分析</title>
+      <link>https://knightf.coding.me/post/factor-analysis/</link>
+      <pubDate>Wed, 31 May 2017 18:32:00 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/factor-analysis/</guid>
+      <description>
+
+&lt;p&gt;当数据集中的数据维度远远大于数据集数目的时候，很难通过一个高斯模型描述数据，更不要说用混合高斯模型了。一个高斯模型中：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+\mu &amp;amp;=&amp;amp; \frac{1}{m}\sum_{i=1}^{m}{x^{(i)}} \\
+\Sigma &amp;amp;=&amp;amp; \frac{1}{m}\sum_{i=1}^{m}{(x^{(i)}-\mu)(x^{(i)}-\mu)^{T}}
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;如果出现上面描述的情形，矩阵 &lt;code&gt;$\Sigma$&lt;/code&gt; 不是一个奇异矩阵，不能提供计算高斯密度分布需要的逆矩阵。试图使用高斯模型拟合数据是否仍然可行？&lt;/p&gt;
+
+&lt;h2 id=&#34;高斯的边际分布和条件分布&#34;&gt;高斯的边际分布和条件分布&lt;/h2&gt;
+
+&lt;p&gt;在描述因子分析模型之前，先讲如何在多参数高斯分布中求边际分布和条件分布。&lt;/p&gt;
+
+&lt;p&gt;假设随机变量为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$x=
+\begin{bmatrix}
+x_{1} \\
+x_{2}
+\end{bmatrix}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中 &lt;code&gt;$x_{1}$&lt;/code&gt; 的长度为 &lt;code&gt;$r$&lt;/code&gt; ， &lt;code&gt;$x_{2}$&lt;/code&gt; 的长度为 &lt;code&gt;$s$&lt;/code&gt; ，整体的长度为 &lt;code&gt;$r+s$&lt;/code&gt; 。假设 &lt;code&gt;$x\sim\mathcal{N}(\mu,\Sigma)$&lt;/code&gt; ，其中：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+\mu &amp;amp;=&amp;amp;
+\begin{bmatrix}
+\mu_{1} \\
+\mu_{2}
+\end{bmatrix} \\
+\Sigma &amp;amp;=&amp;amp;
+\begin{bmatrix}
+\Sigma_{11} &amp;amp; \Sigma_{12} \\
+\Sigma_{21} &amp;amp; \Sigma_{22}
+\end{bmatrix}
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;由于协方差矩阵是对称的，&lt;code&gt;$\Sigma_{12} = \Sigma_{21}^{T}$&lt;/code&gt; 。更进一步带入协方差公式的定义有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+Cov(x) &amp;amp;=&amp;amp; \Sigma \\
+&amp;amp;=&amp;amp; \begin{bmatrix}
+\Sigma_{11} &amp;amp; \Sigma_{12} \\
+\Sigma_{21} &amp;amp; \Sigma_{22} \\
+\end{bmatrix} \\
+&amp;amp;=&amp;amp; \mathbf{E}{[(x-\mu)(x-\mu)^{T}]} \\
+&amp;amp;=&amp;amp; \mathbf{E}
+\begin{bmatrix}
+\begin{pmatrix} x_{1}-\mu_{1} \\ x_{2}-\mu_{2} \end{pmatrix}
+\begin{pmatrix} x_{1}-\mu_{1} \\ x_{2}-\mu_{2} \end{pmatrix}^{T}
+\end{bmatrix} \\
+&amp;amp;=&amp;amp; \mathbf{E}
+\begin{bmatrix}
+(x_{1}-\mu_{1})(x_{1}-\mu_{1})^{T} &amp;amp; (x_{1}-\mu_{1})(x_{2}-\mu_{2})^{T} \\
+(x_{2}-\mu_{2})(x_{1}-\mu_{1})^{T} &amp;amp; (x_{2}-\mu_{2})(x_{2}-\mu_{2})^{T}
+\end{bmatrix}
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;由于高斯分布的边际分布也是高斯分布，就有边际分布 &lt;code&gt;$x_{1}\sim\mathcal{N}(\mu_{1},\Sigma_{11})$&lt;/code&gt; 。同时可以得出给定 &lt;code&gt;$x_{2}$&lt;/code&gt; 时 &lt;code&gt;$x_{1}$&lt;/code&gt; 的条件分布也是高斯分布， &lt;code&gt;$x_{1}|x_{2} \sim \mathcal{N}(\mu_{1|2},\Sigma_{1|2})$&lt;/code&gt; ，其中：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+\mu_{1|2} &amp;amp;=&amp;amp; \mu_{1}+\Sigma_{12}\Sigma_{22}^{-1}(x_2-\mu{2}) \tag{1}\\
+\Sigma_{1|2} &amp;amp;=&amp;amp; \Sigma_{11}-\Sigma_{12}\Sigma_{22}^{-1}\Sigma_{21} \tag{2}
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;找到高斯分布中边际分布与条件分布的求法，就可以构建某隐含变量与原数据集的联系。&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;因子分析模型&#34;&gt;因子分析模型&lt;/h2&gt;
+
+&lt;p&gt;模型中假设 &lt;code&gt;$(x,z)$&lt;/code&gt; 的联合分布中， &lt;code&gt;$z\in\mathcal{R}^{k}$&lt;/code&gt; 是隐含变量，分布有如下关系：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+z &amp;amp;\sim&amp;amp; \mathcal{N}(0,I) \\
+x|z &amp;amp;\sim&amp;amp; \mathcal{N}(\mu+\Lambda{z},\Psi)
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;模型中的参数是向量 &lt;code&gt;$\mu\in\mathcal{R}^{n}$&lt;/code&gt; ，矩阵 &lt;code&gt;$\Lambda\in\mathcal{R}^{n\times{k}}$&lt;/code&gt; 和对角矩阵 &lt;code&gt;$\Psi\in\mathcal{R}^{n\times{n}}$&lt;/code&gt; 。 &lt;code&gt;$k$&lt;/code&gt; 通常取小于 &lt;code&gt;$n$&lt;/code&gt; 的值。&lt;/p&gt;
+
+&lt;p&gt;由上对于变量分布的描述，可发现模型采取的思路。首先，隐含变量 &lt;code&gt;$z$&lt;/code&gt; 符合高斯分布，然后它经 &lt;code&gt;$\mu+\Lambda z^{(i)}$&lt;/code&gt; 的线性变换映射到了 &lt;code&gt;$\mathcal{R}^{n}$&lt;/code&gt; 空间中，最后 &lt;code&gt;$x^{(i)}$&lt;/code&gt; 经由添加了噪声 &lt;code&gt;$\Psi$&lt;/code&gt; 得到。所以模型亦可按照以下方式描述：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+z &amp;amp;\sim&amp;amp; \mathcal{N}(0,I) \\
+\epsilon &amp;amp;\sim&amp;amp; \mathcal{N}(0,\Psi) \\
+x &amp;amp;=&amp;amp; \mu+\Lambda{z}+\epsilon
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;可以得见 &lt;code&gt;$\epsilon$&lt;/code&gt; 和 &lt;code&gt;$z$&lt;/code&gt; 是独立变量。接下来介绍更详细的定义。随机变量 &lt;code&gt;$z$&lt;/code&gt; 和 &lt;code&gt;$x$&lt;/code&gt; 符合联合高斯分布：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{bmatrix}z\\x\end{bmatrix}\sim\mathcal{N}(\mu_{zx},\Sigma)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$\mu_{zx}$&lt;/code&gt; 代表随机变量的均值。随机变量 &lt;code&gt;$z$&lt;/code&gt; 的均值是 &lt;code&gt;$0$&lt;/code&gt; ， &lt;code&gt;$x$&lt;/code&gt; 的均值是 &lt;code&gt;$\mu$&lt;/code&gt; 。所以有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\mu_{zx} = \begin{bmatrix}\overrightarrow{0}\\\mu\end{bmatrix}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;协方差矩阵根据上面边际分布的描述，有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+\Sigma_{zz} &amp;amp;=&amp;amp; Cov(z) = I \\
+\Sigma_{zx} &amp;amp;=&amp;amp; \mathbf{E}[(z-\mathbf{E}[z])(x-\mathbf{E}[x])^{T}] \\
+&amp;amp;=&amp;amp; \mathbf{E}[z(\mu+\Lambda{z}+\epsilon-\mu)^{T}] \\
+&amp;amp;=&amp;amp; \mathbf{E}[zz^{T}]\Lambda^{T}+\mathbf{E}[z\epsilon^{T}] \\
+&amp;amp;=&amp;amp; \Lambda^{T} \\
+\Sigma_{xz} &amp;amp;=&amp;amp; \Sigma_{zx}^{T} = \Lambda \\
+\Sigma_{xx} &amp;amp;=&amp;amp; \mathbf{E}[(x-\mathbf{E}[x])(x-\mathbf{E}[x])^{T}] \\
+&amp;amp;=&amp;amp; \mathbf{E}[(\mu+\Lambda{z}+\epsilon-\mu)(\mu+\Lambda{z}+\epsilon-\mu)^{T}] \\
+&amp;amp;=&amp;amp; \mathbf{E}[\Lambda{z}{z}^{T}\Lambda^{T}+\epsilon{z}^{T}\Lambda^{T}+\Lambda{z}\epsilon^{T}+\epsilon\epsilon^{T}] \\
+&amp;amp;=&amp;amp; \Lambda\mathbf{E}[zz^{T}]\Lambda^{T}+\mathbf{E}[\epsilon\epsilon^T] \\
+&amp;amp;=&amp;amp; \Lambda\Lambda^T+\Psi
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;整理一下得到了完整的描述：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+\begin{bmatrix}z\\x\end{bmatrix}
+&amp;amp;\sim&amp;amp;
+\mathcal{N}\left(
+\begin{bmatrix}\overrightarrow{0}\\\mu\end{bmatrix},
+\begin{bmatrix}
+I &amp;amp; \Lambda^{T} \\
+\Lambda &amp;amp; \Lambda\Lambda^{T}+\Psi
+\end{bmatrix}
+\right) \tag{3}\\
+x &amp;amp;\sim&amp;amp; \mathcal{N}(\mu,\Lambda\Lambda^{T}+\Psi)
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;包含所有参数的对数似然函数如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+l(\mu,\Lambda,\Psi) = \log{\prod_{i=1}^{m}{
+  \frac{1}{(2\pi)^{n/2}|\Lambda\Lambda^{T}+\Psi|^{1/2}}
+  \exp{\left(
+  -\frac{1}{2}(x^{(i)}-\mu)^{T}(\Lambda\Lambda^{T}+\Psi)^{-1}(x^{(i)}-\mu)
+  \right)}
+}}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;最大化对数似然估计就可以求得各参数的值，但直接求值十分困难。&lt;/p&gt;
+
+&lt;h2 id=&#34;应用-em-算法求解因子分析模型&#34;&gt;应用 EM 算法求解因子分析模型&lt;/h2&gt;
+
+&lt;p&gt;将等式 (3) 中的值代入等式 (1) 与 (2) ，可以得到条件概率 &lt;code&gt;$z^{(i)}|x^{(i)}$&lt;/code&gt; ，其中：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+\mu_{z^{(i)}|x^{(i)}} &amp;amp;=&amp;amp; \Lambda^{T}(\Lambda\Lambda^{T}+\Psi)^{-1}(x^{(i)}-\mu) \\
+\Sigma_{z^{(i)}|x^{(i)}} &amp;amp;=&amp;amp; I-\Lambda^{T}(\Lambda\Lambda^{T}+\Psi)^{-1}\Lambda
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;所以 E步骤 中的式子已经得到了：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+Q_{i}(z^{(i)})=
+\frac{1}{(2\pi)^{k/2}{|\Sigma_{\mu_{z^{(i)}|x^{(i)}}}|}^{1/2}}
+\exp{\left(\
+-\frac{1}{2}
+(z^{(i)}-\mu_{z^{(i)}|x^{(i)}})^{T}
+\Sigma_{z^{(i)}|x^{(i)}}^{-1}
+(z^{(i)}-\mu_{z^{(i)}|x^{(i)}})
+\right)}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;根据 EM算法 的定义，接下来在 M步骤 中需要最大化的式子如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\sum_{i=1}^{m}\int_{z^{(i)}}{Q_{i}(z^{(i)})\log{\frac{p(x^{(i)},z^{(i)};\mu,\Lambda,\Psi)}{Q_{i}(z^{(i)})}}dx^{(i)}} \tag{4}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;试求 &lt;code&gt;$\Lambda$&lt;/code&gt; 的更新公式。等式 (4) 中的积分，可以等价于随机变量 &lt;code&gt;$z^{(i)}$&lt;/code&gt; 的期望。所以：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+\sum_{i=1}^{m}\int_{z^{(i)}}{Q_{i}(z^{(i)})
+\left[\log{p(x^{(i)}|z^{(i)};\mu,\Lambda,\Psi)+\log{p(z^{(i)})}-\log{Q_{i}(z^{(i)})}}\right]
+dz^{(i)}} \tag{5} \\
+= \sum_{i=1}^{m}\mathbf{E}_{z^{(i)} \sim Q_{i}}\left[
+\log{p(x^{(i)}|z^{(i)};\mu,\Lambda,\Psi)+\log{p(z^{(i)})}-\log{Q_{i}(z^{(i)})}}
+\right] \tag{6}
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;去除其他不相关、或者是在 E步骤 中确定的变量，需要最大化的式子变为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+&amp;amp;&amp;amp; \sum_{i=1}^{m}\mathbf{E}[\log{p(x^{(i)}|z^{(i)};\mu,\Lambda,\Psi)}] \\
+&amp;amp;=&amp;amp; \sum_{i=1}^{m}\mathbf{E}\left[
+\log{\frac{1}{(2\pi)^{n/2}{|\Psi|}^{1/2}}}
+\exp{\left(-\frac{1}{2}(x^{(i)}-\mu-\Lambda{z^{(i)}})^{T}\Psi^{-1}(x^{(i)}-\mu-\Lambda{z^{(i)}})
+\right)}\right] \\
+&amp;amp;=&amp;amp; \sum_{i=1}^{m}\mathbf{E}\left[
+-\frac{1}{2}\log{|\Psi|}-\frac{n}{2}\log{(2\pi)}
+-\frac{1}{2}(x^{(i)}-\mu-\Lambda{z^{(i)}})^{T}\Psi^{-1}(x^{(i)}-\mu-\Lambda{z^{(i)}})
+\right] \\
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;可见多项式中只有最后一项中含有 &lt;code&gt;$\Lambda$&lt;/code&gt; ，对其求导并且使用 &lt;code&gt;$\mathbf{tr}a=a$&lt;/code&gt; ， &lt;code&gt;$\mathbf{AB}=\mathbf{BA}$&lt;/code&gt; 和 &lt;code&gt;$\nabla_{A}\mathbf{tr}ABA^{T}C=CAB+C^{T}AB$&lt;/code&gt; ，可以得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+&amp;amp;&amp;amp; \nabla_{\Lambda}\sum_{i=1}^{m}-\mathbf{E}\left[\frac{1}{2}(x^{(i)}-\mu-\Lambda{z^{(i)}})^{T}\Psi^{-1}(x^{(i)}-\mu-\Lambda{z^{(i)}})\right] \\
+&amp;amp;=&amp;amp; \sum_{i=1}^{m}\nabla_{\Lambda}\mathbf{E}\left[-\mathbf{tr}\frac{1}{2}{z^{(i)}}^{T}\Lambda^{T}\Psi^{-1}\Lambda{z}^{(i)}+\mathbf{tr}{z^{(i)}}^{T}\Lambda^{T}\Psi^{-1}(x^{(i)}-\mu)\right] \\
+&amp;amp;=&amp;amp; \sum_{i=1}^{m}\nabla_{\Lambda}\mathbf{E}\left[-\mathbf{tr}\frac{1}{2}\Lambda^{T}\Psi^{-1}\Lambda{z}^{(i)}{z^{(i)}}^{T}+\mathbf{tr}\Lambda^{T}\Psi^{-1}(x^{(i)}-\mu){z^{(i)}}^{T}\right] \\
+&amp;amp;=&amp;amp; \sum_{i=1}^{m}\mathbf{E}\left[-\Psi^{-1}\Lambda{z}^{(i)}{z^{(i)}}^{T}+\Psi^{-1}(x^{(i)}-\mu){z^{(i)}}^{T}\right] \\
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;令其得 0 ，可以得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\sum_{i=1}^{m}\Lambda\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[z^{(i)}{z^{(i)}}^{T}\right]
+=\sum_{i=1}^{m}(x^{(i)}-\mu)\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[{z^{(i)}}^{T}\right]$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;求解 &lt;code&gt;$\Lambda$&lt;/code&gt; 有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\Lambda = 
+\left(\sum_{i=1}^{m}(x^{(i)}-\mu)\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[{z^{(i)}}^{T}\right]\right)
+\left(\sum_{i=1}^{m}\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[z^{(i)}{z^{(i)}}^{T}\right]\right)^{-1} \tag{7}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;等式 (7) 中的期望值如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[{z^{(i)}}^{T}\right] &amp;amp;=&amp;amp; \mu^{T}_{z^{(i)}|x^{(i)}} \\
+\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[z^{(i)}{z^{(i)}}^{T}\right] &amp;amp;=&amp;amp; \mu_{z^{(i)}|x^{(i)}}\mu^{T}_{z^{(i)}|x^{(i)}} + \Sigma_{z^{(i)}|x^{(i)}} \\
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$\mathbf{E}_{z^{(i)}{\sim}Q_{i}}\left[z^{(i)}{z^{(i)}}^{T}\right]$&lt;/code&gt; 的值是由于协方差公式的定义 &lt;code&gt;$\mathbf{Cov}(Y)=\mathbf{E}[YY^{T}]-\mathbf{E}[Y]\mathbf{E}[Y]^{T}$&lt;/code&gt; 得到的。将这些值代入等式 (7) 有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\Lambda = 
+\left(\sum_{i=1}^{m}(x^{(i)}-\mu)\mu^{T}_{z^{(i)}|x^{(i)}}\right)
+\left(\sum_{i=1}^{m}\mu_{z^{(i)}|x^{(i)}}\mu^{T}_{z^{(i)}|x^{(i)}} + \Sigma_{z^{(i)}|x^{(i)}}\right)^{-1}
+\tag{8}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;需要注意的就是在推导 M步骤 的时候，不能简单的看到是期望值就胡乱代入。例如 &lt;code&gt;$\mathbf{E}[zz^{T}]$&lt;/code&gt; 的值和 &lt;code&gt;$\mathbf{E}[z]\mathbf{E}[z]^T$&lt;/code&gt; 的值不是等价的。&lt;/p&gt;
+
+&lt;p&gt;同样，也可以得到 M步骤 中 &lt;code&gt;$\mu$&lt;/code&gt; 和 &lt;code&gt;$\Psi$&lt;/code&gt; 的更新公式。对于 &lt;code&gt;$\mu$&lt;/code&gt; 有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\mu=\frac{1}{m}\sum_{i=1}^{m}x^{(i)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;由于均值 &lt;code&gt;$\mu$&lt;/code&gt; 值不会变化，所以只要在开始时计算一次即可。&lt;code&gt;$\Psi$&lt;/code&gt; 的值可通过计算：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\Phi = \frac{1}{m}\sum_{i=1}^{m}
+x^{(i)}{x^{(i)}}^{T}-x^{(i)}\mu_{z^{(i)}|x^{(i)}}^{T}\Lambda^{T}
+-\Lambda\mu_{z^{(i)}|x^{(i)}}{x^{(i)}}^{T}
++\Lambda(\mu_{z^{(i)}|x^{(i)}}\mu_{z^{(i)}|x^{(i)}}^{T}+\Sigma_{z^{(i)}|x^{(i)}})\Lambda^{T}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;得到矩阵 &lt;code&gt;$\Phi$&lt;/code&gt; ，然后令 &lt;code&gt;$\Psi_{ii}=\Phi_{ii}$&lt;/code&gt; ，也就是说 &lt;code&gt;$\Psi$&lt;/code&gt; 中对角线上的值都是 &lt;code&gt;$\Phi$&lt;/code&gt; 中对角线上的值。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>机器学习 第九章 EM 算法</title>
+      <link>https://knightf.coding.me/post/the-em-algorithm/</link>
+      <pubDate>Thu, 18 May 2017 18:28:00 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/the-em-algorithm/</guid>
+      <description>
+
+&lt;h2 id=&#34;詹森不等式&#34;&gt;詹森不等式&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;定理&lt;/strong&gt; &lt;code&gt;$f$&lt;/code&gt; 为一凸函数，&lt;code&gt;$X$&lt;/code&gt; 为一随机变量，有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$E[f(X)] \geq f(E[X])$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;如果 &lt;code&gt;$f$&lt;/code&gt; 是严格凸函数，那么 &lt;code&gt;$E(f(X)) = f(E[X])$&lt;/code&gt; 当且仅当 &lt;code&gt;$X = E[X]$&lt;/code&gt; 的概率为 1 时成立。&lt;/p&gt;
+
+&lt;p&gt;对凹函数，改变不等式符号的方向即可。&lt;/p&gt;
+
+&lt;h2 id=&#34;em-算法&#34;&gt;EM 算法&lt;/h2&gt;
+
+&lt;p&gt;考虑解决一个估计问题。问题包含 &lt;code&gt;$m$&lt;/code&gt; 个独立样本，试图估计出 &lt;code&gt;$p(x, z)$&lt;/code&gt; 模型中的参数，其似然结果如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+l(\theta) &amp;amp;=&amp;amp; \sum_{i=1}^{m}{\log{p(x;\theta)}} \\
+&amp;amp;=&amp;amp; \sum_{i=1}^{m}{\log{\sum_{z}{p(x,z;\theta)}}}
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$z^{(i)}$&lt;/code&gt; 现在为隐含变量；如果它的值是已知的则问题变得简单（也就是监督学习）。&lt;/p&gt;
+
+&lt;p&gt;直接求似然最大值很困难；取而代之则是不断重复给出 &lt;code&gt;$l$&lt;/code&gt; 的下界 (E 步骤) ，并优化下界的值 (M 步骤) 。&lt;/p&gt;
+
+&lt;p&gt;对每个 &lt;code&gt;$i$&lt;/code&gt; ，令 &lt;code&gt;$Q_i$&lt;/code&gt; 为 &lt;code&gt;$z$&lt;/code&gt; 的某概率分布。&lt;code&gt;$\sum_{z}{Q_{i}(z)=1}$&lt;/code&gt; ， &lt;code&gt;$Q_{i}(z) \geq 0$&lt;/code&gt; 。考虑：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+\sum_{i}{\log{p(x^{(i)};\theta)}} &amp;amp;=&amp;amp; \sum_{i}{\log{\sum_{z^{(i)}}{p(x^{(i)},z^{(i)};\theta)}}} \tag{1} \\
+&amp;amp;=&amp;amp; \sum_{i}{\log{\sum_{z^{(i)}}{Q_{i}(z^{(i)})\frac{p(x^{(i)},z^{(i)};\theta)}{Q_{i}(z^{(i)})}}}} \tag{2} \\
+&amp;amp;\geq&amp;amp; \sum_{i}{\sum_{z^{(i)}}{Q_{i}\log{\frac{p(x^{(i)},z^{(i)};\theta)}{Q_{i}(z^{(i)})}}}} \tag{3}
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;推导的最后一步用了詹森不等式。&lt;code&gt;$f(x)=\log{x}$&lt;/code&gt; 是一个凹函数。并且&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\sum_{z^{(i)}}{Q_{i}{(z^{(i)})[\frac{p(x^{(i)},z^{(i)};\theta)}{Q_{i}(z^{(i)})}]}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;是 &lt;code&gt;$z^{(i)}$&lt;/code&gt; 关于概率分布 &lt;code&gt;$Q_i$&lt;/code&gt; 的期望。根据詹森不等式，就有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$f(E_{z^{(i)}{\sim}Q_{i}}[\frac{p(x^{(i)},z^{(i)};\theta)}{Q_{i}(z^{(i)})}]) \geq E_{z^{(i)}{\sim}Q_{i}}[f(\frac{p(x^{(i)},z^{(i)};\theta)}{Q_{i}(z^{(i)})})]$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;由式子 (3) 可知，对于任意的概率分布 &lt;code&gt;$Q_i$&lt;/code&gt; ，&lt;code&gt;$l$&lt;/code&gt; 都有了下界。选择何种概率模型 &lt;code&gt;$Q_i$&lt;/code&gt; 是一个问题。如果已经有了对于参数 &lt;code&gt;$\theta$&lt;/code&gt; 的估计，那么固定住下界的值显得很自然。也就是说对于固定的 &lt;code&gt;$\theta$&lt;/code&gt; 需要不等式变为等式。&lt;/p&gt;
+
+&lt;p&gt;令等式成立，需要对一个定值取期望。也就是说：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\frac{p(x^{(i)},z^{(i)};\theta)}{Q_{i}(z^{(i)})} = c$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这个需求很容易满足，只需：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$Q_{i}(z^{(i)}) \propto p(x^{(i)},z^{(i)};\theta)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;并且由于它的概率分布特性，有 &lt;code&gt;$\sum_{z}{Q_{i}{(z^{(i)})}} = 1$&lt;/code&gt; 。说明：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+Q_{i}(z^{(i)}) &amp;amp;=&amp;amp; \frac{p(x^{(i)},y^{(i)};\theta)}{\sum_{z}{p(x^{(i)},z;\theta)}} \\
+&amp;amp;=&amp;amp; \frac{p(x^{(i)},y^{(i)};\theta)}{p(x^{(i)};\theta)} \\
+&amp;amp;=&amp;amp; p(z^{(i)}|x^{(i)};\theta)
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;所以指定分布 &lt;code&gt;$Q_i$&lt;/code&gt; 为给定 &lt;code&gt;$x^{(i)}$&lt;/code&gt; 与参数 &lt;code&gt;$\theta$&lt;/code&gt; 时 &lt;code&gt;$z^{(i)}$&lt;/code&gt; 的后验概率分布。现在依据这种对 &lt;code&gt;$Q_i$&lt;/code&gt; 的选择，式子 (3) 给出了试图最大化的似然对数的下界。这是 E 步骤。M 步骤中，根据 E 步骤得到的结果最大化 &lt;code&gt;$\theta$&lt;/code&gt; 。重复这两步就是 EM 算法：&lt;/p&gt;
+
+&lt;p&gt;重复以下两步直到收敛&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;E 步骤&lt;/strong&gt; 对于每个 &lt;code&gt;$i$&lt;/code&gt; ，&lt;code&gt;$Q_{i}(z^{(i)}) := p(z^{(i)}|x^{(i)};\theta)$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;M 步骤&lt;/strong&gt; &lt;code&gt;$\theta := \arg\max_{\theta}\sum_{i}{\sum_{z^{(i)}}{Q_{i}(z^{(i)})\log{\frac{p(x^{(i)},z^{(i)};\theta)}{Q_i(z^{(i)})}}}}$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;h2 id=&#34;混合高斯模型&#34;&gt;混合高斯模型&lt;/h2&gt;
+
+&lt;p&gt;回顾由参数 &lt;code&gt;$\phi$&lt;/code&gt;, &lt;code&gt;$\mu,$&lt;/code&gt; 和 &lt;code&gt;$\Sigma$&lt;/code&gt; 构成的混合高斯模型。E 步骤很简单。根据上面的公式，有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$w_{j}^{(i)} = Q_i(z^{(i)}=j) = P(z^{(i)}=j|x^{(i)};\phi,\mu,\Sigma)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;M 步骤中，需要最大化的式子为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+&amp;amp;&amp;amp; \sum_{i=1}^{m}{\sum_{z^{(i)}}{Q_{i}(z^{(i)})\log{\frac{p(x^{(i)},z^{(i)};\phi,\mu,\Sigma)}{Q_i(z^{(i)})}}}} \\
+&amp;amp;=&amp;amp; \sum_{i=1}^{m}{\sum_{j=1}^{k}{Q_{i}(z^{(i)}=j)\log{\frac{p(x^{(i)}|z^{(i)}=j;\mu,\Sigma)p(z^{(i)}=j;\phi)}{Q_i(z^{(i)}=j)}}}} \\
+&amp;amp;=&amp;amp; \sum_{i=1}^{m}{\sum_{j=1}^{k}{w_{j}^{(i)}\log{\frac{\frac{1}{(2\pi)^{\frac{n}{2}}{|\Sigma_{j}|}^{\frac{1}{2}}}\exp{(-\frac{1}{2}(x^{(i)}-\mu_{j})^{T}\Sigma_{j}^{-1}(x^{(i)}-\mu_{j}))}\cdot\phi_{j}}{w_{j}^{(i)}}}}}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;对 &lt;code&gt;$\mu_{l}$&lt;/code&gt; 求最大值：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+&amp;amp;&amp;amp; \nabla_{\mu_{l}}{\sum_{i=1}^{m}{\sum_{j=1}^{k}{w_{j}^{(i)}\log{\frac{\frac{1}{(2\pi)^{\frac{n}{2}}{|\Sigma_{j}|}^{\frac{1}{2}}}\exp{(-\frac{1}{2}(x^{(i)}-\mu_{j})^{T}\Sigma_{j}^{-1}(x^{(i)}-\mu_{j}))}\cdot\phi_{j}}{w_{j}^{(i)}}}}}} \\
+&amp;amp;=&amp;amp; -\nabla_{\mu_{l}}{\sum_{i=1}^{m}{\sum_{j=1}^{k}{w_{j}^{(i)}\frac{1}{2}(x^{(i)}-\mu_{j})^{T}\Sigma_{j}^{-1}(x^{(i)}-\mu_{j})}}} \\
+&amp;amp;=&amp;amp; \frac{1}{2}\sum_{i=1}^{m}{w_{l}^{(i)}\nabla_{\mu_{l}}2\mu_{l}^{T}\Sigma_{l}^{-1}x^{(i)}-\mu_{l}^{T}\Sigma_{l}^{-1}\mu_{l}} \\
+&amp;amp;=&amp;amp; \sum_{i=1}^{m}{w_{l}^{(i)}(\Sigma_{l}^{-1}x^{(i)}-\Sigma_{l}^{-1}\mu_{l})}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;令其等于 0 ，得到 &lt;code&gt;$\mu_{l}$&lt;/code&gt; 的更新公式：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\mu_{l} := \frac{\sum_{i=1}^{m}{w_{l}^{(i)}x^{(i)}}}{\sum_{i=1}^{m}{w_{l}^{(i)}}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;对于 &lt;code&gt;$\phi_j$&lt;/code&gt; ，去掉与其无关的多项式得到需要最大化的式子为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\sum_{i=1}^{m}{\sum_{j=1}^{k}{w_{j}^{(i)}\log{\phi_{j}}}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;由 &lt;code&gt;$\sum_{j=1}^{k}{\phi_{j}}=1$&lt;/code&gt; 的约束条件可以构建拉格朗日算子：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\mathcal{L}(\phi)=\sum_{i=1}^{m}{\sum_{j=1}^{k}{w_{j}^{(i)}\log{\phi_{j}}}}+\beta(\sum_{j=1}^{k}{\phi_{j}}-1)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;求偏导得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\frac{\partial}{\partial\phi_{j}}\mathcal{L}(\phi)=\sum_{i=1}^{m}{\frac{w_{j}^{(i)}}{\phi_{j}}}+1$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;令其等于 0 ，得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\phi_{j}=\frac{\sum_{i=1}^{m}{w_{j}^{(i)}}}{-\beta}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;由于概率分布特性 (和必需为 1) ，则有更新公式为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\phi_{j} := \frac{1}{m}\sum_{i=1}^{m}{w_{j}^{(i)}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;协方差矩阵 &lt;code&gt;$\Sigma_{j}$&lt;/code&gt; 的更新公式可以通过类似方法得到。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>机器学习 第八章 在线学习与K-means算法</title>
+      <link>https://knightf.coding.me/post/the-perceptron-and-k-means/</link>
+      <pubDate>Fri, 12 May 2017 14:47:00 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/the-perceptron-and-k-means/</guid>
+      <description>
+
+&lt;h1 id=&#34;感知器与大边界分类器&#34;&gt;感知器与大边界分类器&lt;/h1&gt;
+
+&lt;p&gt;考虑在线学习 (online learning) 这种在学习过程中就持续做出预测的情况。回忆感知器的预测公式：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$h_{\theta}(x)=g(\theta^{T}x)\tag{1}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+g(z)=
+\begin{cases}
+1, &amp;amp; \text{if $z\geq0$} \\
+-1, &amp;amp; \text{if $z&amp;lt;0$}
+\end{cases}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;给定训练样本感知器根据下面的方式更新参数。如果 &lt;code&gt;$h_{\theta}(x)=y$&lt;/code&gt; ，那么参数不变；反之：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta := \theta+yx$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;下面的定理给出了感知器算法有关误差的限制。注意下面的限制与样本序列的数量和维度都没有关系。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;定理&lt;/strong&gt; 给定一个样本序列 &lt;code&gt;$(x^{(1)}, y^{(1)}),(x^{(2)},y^{(2)}),\ldots(x^{(m)},y^{(m)})$&lt;/code&gt; 。如果对于所有 &lt;code&gt;$i$&lt;/code&gt; 都有 &lt;code&gt;$||x^{(i)}||\leq D$&lt;/code&gt; ，并且存在单位向量 &lt;code&gt;$u$&lt;/code&gt; 使所有样本都有 &lt;code&gt;$y^{(i)}\cdot(u^{T}x^{(i)})\geq\gamma$&lt;/code&gt; 。那么感知器在这个序列上产生错误的次数最多为 &lt;code&gt;$(D/\gamma)^2$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;下面给出证明。&lt;/p&gt;
+
+&lt;p&gt;根据上面的规则，感知器仅在结果错误的时候更新参数。令 &lt;code&gt;$\theta^{(k)}$&lt;/code&gt; 代表发生第 &lt;code&gt;$k$&lt;/code&gt; 次错误时的权值。由于初始值是零，就有 &lt;code&gt;$\theta^{(1)}=\overrightarrow{0}$&lt;/code&gt; 。所以如果 &lt;code&gt;$g((x^{(i)})^{T}\theta^{(k)}) \neq y^{(i)}$&lt;/code&gt; (因为是错误时的情况，值不一致) ，就表明：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$(x^{(i)})^{T}\theta^{(k)}y^{(i)} \leq 0 \tag{2}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;同时根据上面描述的参数更新规则，就有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+(\theta^{(k+1)})^{T}u &amp;amp;=&amp;amp; (\theta^{(k)})^{T}u+y^{(i)}(x^{(i)})^{T}u \\
+&amp;amp;\geq&amp;amp; (\theta^{(k)})^{T}u + \gamma 
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这是一个递推公式，所以展开就有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$(\theta^{(k+1)})^{T}u \geq k\gamma \tag{3}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;并且还有下面的关系：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+{||\theta^{(k+1)}||}^{2} &amp;amp;=&amp;amp; {||\theta^{(k)}+y^{(i)}x^{(i)}||}^{2} \\
+&amp;amp;=&amp;amp; {||\theta^{(k)}||}^{2} + {||x^{(i)}||}^{2} + 2y^{(i)}{(x^{(i)})}^{T}\theta^{(i)} \\
+&amp;amp;\leq&amp;amp; {||\theta^{(k)}||}^{2} + {||x^{(i)}||}^{2} \\
+&amp;amp;\leq&amp;amp; {||\theta^{(k)}||}^{2} + D^{2} \tag{4}
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;上面推导过程的第2步到第3步应用了等式(2)。等式4表示出的递推关系说明：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$${||\theta^{(k+1)}||}^{2} \leq kD^2 \tag{5}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;等式(3)和(4)结合起来，得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+\sqrt{k}D &amp;amp;\geq&amp;amp; ||\theta^{(k+1)}|| \\
+&amp;amp;\geq&amp;amp; {(\theta^{(k+1)})}^{T}u \\
+&amp;amp;\geq&amp;amp; k\gamma
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;所以得到了关系 &lt;code&gt;$k \leq (D/\gamma)^{2}$&lt;/code&gt; 。也就是说，感知器发生了第 &lt;code&gt;$k$&lt;/code&gt; 次错误时，&lt;code&gt;$k \leq (D/\gamma)^{2}$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;h1 id=&#34;k-means-分类算法&#34;&gt;K-means 分类算法&lt;/h1&gt;
+
+&lt;p&gt;K-means 分类算法的内容如下：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;随机生成簇的中心 (cluster centroid) &lt;code&gt;$\mu_{1},\mu_{2},\ldots,\mu_{k}$&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;重复下面的过程直到收敛：&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;对所有 &lt;code&gt;$i$&lt;/code&gt; 令：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$c^{(i)}:=\arg\min_{j}{{||x^{(i)}-\mu_{j}||}^{2}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;对所有 &lt;code&gt;$j$&lt;/code&gt; 令：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\mu_{j} := \frac{\sum_{i=1}^{m}{1\{c^{(i)}=j\}x^{(i)}}}{\sum_{i=1}^{m}{1\{c^{(i)}=j\}}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;在上面的算法中，&lt;code&gt;$k$&lt;/code&gt; 是想要分成簇的个数。簇中心 &lt;code&gt;$\mu_{j}$&lt;/code&gt; 代表当前分类的中心位置。&lt;/p&gt;
+
+&lt;p&gt;内部的循环中算法不断重复这样两步：(1) 把训练样本 &lt;code&gt;$x^{(i)}$&lt;/code&gt; 分配到离它最近的簇中心所属的簇中。 (2) 按照当前每个簇下的样本更新本簇的中心位置。&lt;/p&gt;
+
+&lt;p&gt;K-means 算法一定收敛么？是的。定义失真函数 (distortion function) 如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$J(c,\mu)=\sum_{i=1}^{m}{{||x^{(i)}-\mu_{c^{(i)}}||}^{2}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$J$&lt;/code&gt; 衡量每个样本与其簇中心的平方距离之和。可以发现 K-means 算法就是对 &lt;code&gt;$J$&lt;/code&gt; 做坐标下降。在内部循环中先保持 &lt;code&gt;$\mu$&lt;/code&gt; 不变，优化 &lt;code&gt;$c$&lt;/code&gt; ；然后在保持 &lt;code&gt;$c$&lt;/code&gt; 不变，优化 &lt;code&gt;$\mu$&lt;/code&gt; 。所以 &lt;code&gt;$J$&lt;/code&gt; 必然单调减并达到收敛。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$J$&lt;/code&gt; 有多个局部最优解。为得到全局最优解，通常计算多次并选取 &lt;code&gt;$J$&lt;/code&gt; 的值最小的结果。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>机器学习 第七章 一般化与模型选择</title>
+      <link>https://knightf.coding.me/post/regularization-and-model-selection/</link>
+      <pubDate>Fri, 28 Apr 2017 18:24:00 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/regularization-and-model-selection/</guid>
+      <description>
+
+&lt;p&gt;考虑自动化解决平衡偏差与方差的问题。例如自动选择就地权重回归中的带宽的值 &lt;code&gt;$\tau$&lt;/code&gt; ，又或者是支持向量机中的参数 &lt;code&gt;$C$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;h1 id=&#34;交叉验证&#34;&gt;交叉验证&lt;/h1&gt;
+
+&lt;p&gt;&lt;code&gt;简单交叉验证&lt;/code&gt; (Simple Cross Validation) 中步骤如下：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;随机将训练集 &lt;code&gt;$S$&lt;/code&gt; 分成 &lt;code&gt;$S_{train}$&lt;/code&gt; (70%) 和 &lt;code&gt;$S_{CV}$&lt;/code&gt; (30%) 。&lt;/li&gt;
+&lt;li&gt;对每一个 &lt;code&gt;$M_{i}$&lt;/code&gt; 都用 &lt;code&gt;$S_{train}$&lt;/code&gt; 训练，得到假设函数 &lt;code&gt;$h_{i}$&lt;/code&gt; 。&lt;/li&gt;
+&lt;li&gt;选择在交叉验证的数据集上误差 &lt;code&gt;$\hat{\epsilon}_{S_{CV}}(h_{i})$&lt;/code&gt; 最小的 &lt;code&gt;$h_{i}$&lt;/code&gt; 。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;这样验证的不利之处在于浪费了 30% 的训练集。如果训练数据充分没有问题，但如果数据不充分可以用这种验证方法，叫做 &lt;code&gt;k 重交叉验证&lt;/code&gt; (K-fold Cross Validation) ，每次保留的数据比例很少。&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;把训练集 &lt;code&gt;$S$&lt;/code&gt; 等数量分为 &lt;code&gt;$k$&lt;/code&gt; 个互不交叉的子集 &lt;code&gt;$S_1, \ldots , S_k$&lt;/code&gt; 。&lt;/li&gt;
+&lt;li&gt;对每个可用的模型 &lt;code&gt;$M_i$&lt;/code&gt; ，分别计算出 &lt;code&gt;$k$&lt;/code&gt; 个假设函数 &lt;code&gt;$h_{ij}$&lt;/code&gt; 。每次计算时使用的训练集都去掉子集 &lt;code&gt;$S_j$&lt;/code&gt; 。然后用子集 &lt;code&gt;$S_j$&lt;/code&gt; 验证假设函数 &lt;code&gt;$h_{ij}$&lt;/code&gt; 的误差 &lt;code&gt;$\hat{\epsilon}_{S_j}(h_{ij})$&lt;/code&gt; 。最后计算出所有假设函数误差的平均数，衡量 &lt;code&gt;$M_i$&lt;/code&gt; 的误差。&lt;/li&gt;
+&lt;li&gt;选出误差最小的 &lt;code&gt;$M_i$&lt;/code&gt; ，并使用整个训练集 &lt;code&gt;$S$&lt;/code&gt; 得到最佳的假设函数。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;通常 &lt;code&gt;$k=10$&lt;/code&gt; 。如果数据很离散，也可以令 &lt;code&gt;$k=m$&lt;/code&gt; ，这样每次只剔除一条记录。这样的验证方式叫做 &lt;code&gt;除一交叉验证&lt;/code&gt; (Leave-one-out Cross Validation) 。&lt;/p&gt;
+
+&lt;h1 id=&#34;特征选择&#34;&gt;特征选择&lt;/h1&gt;
+
+&lt;p&gt;考虑 &lt;code&gt;$n$&lt;/code&gt; 远远大于 &lt;code&gt;$m$&lt;/code&gt; 的情况。问题在于如何从众多的特征中选出与本次学习有关的几个。如果有 &lt;code&gt;$n$&lt;/code&gt; 个特征，则有 &lt;code&gt;$2^{n}$&lt;/code&gt; 种可能的特征选择。下面描述的过程叫做 &lt;code&gt;正向搜索&lt;/code&gt; (Forward Search) :&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;初始 &lt;code&gt;$\mathcal{F} = \emptyset$&lt;/code&gt; 。&lt;/li&gt;
+&lt;li&gt;重复以下步骤：对于 &lt;code&gt;$i=1,\ldots,n$&lt;/code&gt; ，如果 &lt;code&gt;$i\notin\mathcal{F}$&lt;/code&gt; 则令 &lt;code&gt;$\mathcal{F}_{i}=\mathcal{F}\cup\{i\}$&lt;/code&gt; 。然后选择一种交叉验证的方法评价 &lt;code&gt;$\mathcal{F}_i$&lt;/code&gt; 。也就是只用 &lt;code&gt;$\mathcal{F}_i$&lt;/code&gt; 中的特征估计出误差。令 &lt;code&gt;$\mathcal{F}$&lt;/code&gt; 等于这一步找到的最佳特征集合。&lt;/li&gt;
+&lt;li&gt;选出所有的特征子集中最佳的一个。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;循环结束的条件可以是 &lt;code&gt;$|\mathcal{F}|$&lt;/code&gt; 超过了之前设置好的数量或者 &lt;code&gt;$\mathcal{F}$&lt;/code&gt; 已经囊括了所有的特征。也有 &lt;code&gt;反向搜索&lt;/code&gt; (Backward Search) ，与正向搜索相反，它从囊括所有特征的集合中一个个剔除直到收敛。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;筛选特征选择&lt;/code&gt; (Filter Feature Selection) 过程简单而且更好理解。这种方法试图计算出 &lt;code&gt;$S(i)$&lt;/code&gt; 作为评价特征 &lt;code&gt;$x_{i}$&lt;/code&gt; 与标签 &lt;code&gt;$y$&lt;/code&gt; 的相关程度。然后我们选择出 &lt;code&gt;$k$&lt;/code&gt; 个相关程度最高的特征。&lt;/p&gt;
+
+&lt;p&gt;实际执行的过程中通常选择 &lt;code&gt;$x_{i}$&lt;/code&gt; 与 &lt;code&gt;$y$&lt;/code&gt; 之间的 &lt;code&gt;共同信息&lt;/code&gt; (Mutual Information) 作为 &lt;code&gt;$S(i)$&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$MI(x_{i}, y)=\sum_{x_{i}\in\{0,1\}}{\sum_{y\in\{0,1\}}{p(x_{i},y)\log{\frac{p(x_{i},y)}{p(x_{i})p(y)}}}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;贝叶斯统计与一般化&#34;&gt;贝叶斯统计与一般化&lt;/h1&gt;
+
+&lt;p&gt;之前选择参数 &lt;code&gt;$\theta$&lt;/code&gt; 用的是下面的公式：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta_{ML}=\arg\max_{\theta}\prod_{i=1}^{m}{p(y^{(i)}|x^{(i)};\theta)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这样求出的值是应用 &lt;code&gt;频率统计&lt;/code&gt; 学派的思想，即参数已确定只是未知。而使用 &lt;code&gt;贝叶斯统计&lt;/code&gt; 学派的思想， &lt;code&gt;$\theta$&lt;/code&gt; 则是一个未知的随机变量。在这种方法中，定义 &lt;code&gt;先验概率&lt;/code&gt; &lt;code&gt;$p(\theta)$&lt;/code&gt; 代表对于参数的先验估计。使用训练集中的记录 &lt;code&gt;$x$&lt;/code&gt; 可以计算得到参数关于训练集的后验概率分布：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+p(\theta|S) &amp;amp;=&amp;amp; \frac{p(S|\theta)p(\theta)}{p(S)} \\
+&amp;amp;=&amp;amp; \frac{(\prod_{i=1}^{m}{p(y^{(i)}|x^{(i)},\theta)})p(\theta)}{\int_{\theta}{\prod_{i=1}^{m}{p(y^{(i)}|x^{(i)},\theta)p(\theta)}}d\theta}
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;上面式子中的 &lt;code&gt;$p(y^{(i)}|x^{(i)},\theta)$&lt;/code&gt; 通过选取的模型预测出的结果得到。而当给出测试集中的记录 &lt;code&gt;$x$&lt;/code&gt; 时，可以计算标签 &lt;code&gt;$y$&lt;/code&gt; 关于记录和测试集的概率分布：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(y|x,S)=\int_{\theta}{p(y|x;\theta)p(\theta|S)}d\theta$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中 &lt;code&gt;$p(\theta|S)$&lt;/code&gt; 可以通过再之前的式子得到。如果需要计算给定 &lt;code&gt;$x$&lt;/code&gt; 时 &lt;code&gt;$y$&lt;/code&gt; 的期望，就有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$E[y|x,S]=\int_{y}{yp(y|x,S)}dy$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这样的流程是完整的贝叶斯预测过程。通常这样的后验概率很难计算，因为需要对 &lt;code&gt;$\theta$&lt;/code&gt; 积分。所以一般将对 &lt;code&gt;$\theta$&lt;/code&gt; 的后验概率分布替换为一个单一的估计值 &lt;code&gt;最大后验概率&lt;/code&gt; (Maximum a Posteriori) ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta_{MAP}=\arg\max_{\theta}{\prod_{i=1}^{m}{p(y^{(i)}|x^{(i)},\theta)p(\theta)}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;注意这个方程和最大似然估计的方程类似，只在最后添加了 &lt;code&gt;$p(\theta)$&lt;/code&gt; 。实际应用过程中常用的先验概率模型使用 &lt;code&gt;$\theta\sim\mathcal{N}(0, \tau^{2}I)$&lt;/code&gt; 。采用这样的概率模型得到的 &lt;code&gt;$\theta_{MAP}$&lt;/code&gt; 通常范数比最大似然估计得到的 &lt;code&gt;$\theta$&lt;/code&gt; 的范数更小。这使得贝叶斯 MAP 估计比起最大似然估计更不易受到过度拟合的影响。比如贝叶斯逻辑回归，虽然它的 &lt;code&gt;$n\gg{m}$&lt;/code&gt;，但还是一个有效的文字分类方法。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>机器学习 第六章 机器学习理论</title>
+      <link>https://knightf.coding.me/post/learning-theory/</link>
+      <pubDate>Fri, 24 Mar 2017 17:06:00 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/learning-theory/</guid>
+      <description>
+
+&lt;h1 id=&#34;误差-方差的权衡&#34;&gt;误差/方差的权衡&lt;/h1&gt;
+
+&lt;p&gt;之前的例子中，用低次或高次多项式的曲线拟合数据会产生高误差和高方差的问题。也就是欠拟合和过拟合。所以可见误差和方差需要人工权衡，来减少之后实际应用模型时发生的误差。定义一个假设函数的 &lt;code&gt;一般误差&lt;/code&gt; 为它对于所有(也就是不局限于训练集)样本的误差期望。&lt;/p&gt;
+
+&lt;h1 id=&#34;一些铺垫&#34;&gt;一些铺垫&lt;/h1&gt;
+
+&lt;p&gt;怎么才能量化表示误差/方差的此消彼长呢？为什么在训练集上误差变小就一定代表它应对其他样本时的误差也小呢？训练误差与一般误差有联系么？在什么样的条件下学习算法才能有效工作？解答这些问题有助于落实之前的理论。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;The union bound 引理&lt;/strong&gt; &lt;code&gt;$A_1,A_2,\ldots,A_k$&lt;/code&gt; 表示 &lt;code&gt;$k$&lt;/code&gt; 个不同的事件(不一定相互独立)。有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$P(A_{1} \cup \cdots \cup A_{k}) \leq P(A_{1})+ \ldots +P(A_{k})$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Hoeffding inequality 引理&lt;/strong&gt; 从一个伯努利分布中取出 &lt;code&gt;$m$&lt;/code&gt; 个独立随机变量，用 &lt;code&gt;$Z_1,ldots,Z_m$&lt;/code&gt; 表示，它们服从 iid 分布。例如， &lt;code&gt;$P(Z_{i}=1)=\phi$&lt;/code&gt; ，&lt;code&gt;$P(Z_{i}=0)=1-\phi$&lt;/code&gt; 。这些随机变量的均值为 &lt;code&gt;$\hat{\phi}=(1/m)\sum_{i=1}^{m}Z_{i}$&lt;/code&gt; ，有 &lt;code&gt;$\gamma&amp;gt;0$&lt;/code&gt; 固定，则：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$P(|\phi-\hat{\phi}|&amp;gt;\gamma)\leq2\exp{(-2\gamma^{2}m)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;只用这两个引理，就可以证明学习理论中一些最深奥也最重要的结果。为了简化过程，考虑二元分类器 &lt;code&gt;$y\in{0,1}$&lt;/code&gt; 。有大小为 &lt;code&gt;$m$&lt;/code&gt; 的训练集 &lt;code&gt;$S=\{(x^{(i)},y^{(i)});i=1,\ldots,m\}$&lt;/code&gt; ，训练样本均来自 &lt;code&gt;$\mathcal{D}$&lt;/code&gt; 符合 iid 。对假设 &lt;code&gt;$h$&lt;/code&gt; ，它的训练误差为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\hat{\epsilon}(h)=\frac{1}{m}\sum_{i=1}^{m}1\{h(x^{(i)}\neq y^{(i)})\}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;上式表示假设 &lt;code&gt;$h$&lt;/code&gt; 对训练样本判断错误的比例。定义一般误差为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\epsilon(h)=P_{(x,y)\sim\mathcal{D}}(h(x) \neq y)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;它和 &lt;code&gt;$\hat{\epsilon}$&lt;/code&gt; 很类似，只不过它的样本不一定来自训练集。考虑线性分类问题， &lt;code&gt;$h_{\theta}(x)=1\{\theta^{T}x \geq 0\}$&lt;/code&gt; 。找到最合适的参数 &lt;code&gt;$\theta$&lt;/code&gt; ，一个方法是选择训练误差最小时的 &lt;code&gt;$\hat{\theta}$&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\hat{\theta}=\arg{\min_{\theta}\hat{\epsilon}(h_{\theta})}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这一过程称作 &lt;code&gt;经验主义风险最小化&lt;/code&gt; (empirical risk minimization) ，由它得到的假设函数 &lt;code&gt;$\hat{h}=h_{\hat{\theta}}$&lt;/code&gt; 。定义 &lt;code&gt;假设集合&lt;/code&gt; (hypothesis class) &lt;code&gt;$\mathcal{H}$&lt;/code&gt; 是囊括了一种学习算法下所有可能的分类器的集合。对于线性分类就有 &lt;code&gt;$\mathcal{H}=\{h_{\theta}:h_{\theta}(x)=1\{\theta^{T}x\geq{0}\},\theta\in\mathbb{R}^{n+1}\}$&lt;/code&gt; 。从更广泛的意义上说， &lt;code&gt;$\mathcal{H}$&lt;/code&gt; 也可以表示某种具有特定结构的神经网络。&lt;/p&gt;
+
+&lt;p&gt;经验主义风险最小化现在就可以被表示成一个从某一类学习算法的 &lt;code&gt;$\mathcal{H}$&lt;/code&gt; 中挑选最佳假设的过程：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\hat{h}=\arg{\min_{h\in\mathcal{H}}\hat{\epsilon}(h)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;mathcal-h-是有限集合时&#34;&gt;&lt;code&gt;$\mathcal{H}$&lt;/code&gt; 是有限集合时&lt;/h1&gt;
+
+&lt;p&gt;考虑 &lt;code&gt;$\mathcal{H}$&lt;/code&gt; 中有 &lt;code&gt;$k$&lt;/code&gt; 个假设时的情况。首先证明对于所有 &lt;code&gt;$h$&lt;/code&gt; ， &lt;code&gt;$\hat{\epsilon}(h)$&lt;/code&gt; 是一个对于 &lt;code&gt;$\epsilon(h)$&lt;/code&gt; 可信的估计。从 &lt;code&gt;$\mathcal{H}$&lt;/code&gt; 中选出某 &lt;code&gt;$h_{i}$&lt;/code&gt; 。定义一个伯努利随机变量 &lt;code&gt;$Z$&lt;/code&gt; ，它的分布按照如下定义。从 &lt;code&gt;$\mathcal{D}$&lt;/code&gt; 中抽样选出 &lt;code&gt;$(x,y)$&lt;/code&gt; ，令 &lt;code&gt;$Z=1\{h_{i}(x)\neq{y}\}$&lt;/code&gt; 。同样的，定义 &lt;code&gt;$Z_{j}=1\{h_{i}(x^{(j)}\neq{y^{(j)}})\}$&lt;/code&gt; 。由于训练样本都是从 &lt;code&gt;$\mathcal{D}$&lt;/code&gt; 中以 iid 方式选出，所以 &lt;code&gt;$Z$&lt;/code&gt; 和 &lt;code&gt;$Z_{j}$&lt;/code&gt; 具有有相同的分布。&lt;/p&gt;
+
+&lt;p&gt;所以对一个随机选取的样本错误分类的概率 &lt;code&gt;$\epsilon(h)$&lt;/code&gt; 就是 &lt;code&gt;$Z$&lt;/code&gt; 和 &lt;code&gt;$Z_{j}$&lt;/code&gt; 的期望：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\hat{\epsilon}(h_{i})=\frac{1}{m}\sum_{j=1}^{m}Z_{j}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;应用 Hoeffiding inequality 引理有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$P(|\epsilon(h_{i})-\hat{\epsilon}(h_{i})|&amp;gt;\gamma)\leq2\exp{(-2\gamma^{2}m)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;说明在 &lt;code&gt;$m$&lt;/code&gt; 的值很大的情况下对于一个给定的 &lt;code&gt;$h_{i}$&lt;/code&gt; ，训练误差和一般误差有很大的概率会十分接近。为了证明对于所有 &lt;code&gt;$h \in \mathcal{H}$&lt;/code&gt; 都有这个规律，令 &lt;code&gt;$A_{i}$&lt;/code&gt; 表示事件 &lt;code&gt;$|\epsilon(h_{i})-\hat{\epsilon}(h_{i})|&amp;gt;\gamma$&lt;/code&gt; 。所以对于任意 &lt;code&gt;$A_{i}$&lt;/code&gt; ，都有 &lt;code&gt;$P(A_{i})\leq{2\exp{(-2\gamma^{2}m)}}$&lt;/code&gt; 。应用 The union bound 引理：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+P(\exists{h\in\mathcal{H}}.|\epsilon(h_{i})-\hat{\epsilon}(h_{i})&amp;gt;\gamma|) &amp;amp;=&amp;amp; P(A_{1}\cup\cdots\cup{A_{k}}) \\
+&amp;amp;\leq&amp;amp; \sum_{i=1}^{k}P(A_{i}) \\
+&amp;amp;\leq&amp;amp; \sum_{i=1}^{k}2\exp{(-2\gamma^{2}m)} \\
+&amp;amp;=&amp;amp; 2k\exp{(-2\gamma^{2}m)}
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;同时取非，得到对于所有 &lt;code&gt;$h\in\mathcal{H}$&lt;/code&gt; ， &lt;code&gt;$\hat{\epsilon}(h)$&lt;/code&gt; 和 &lt;code&gt;$\epsilon(h)$&lt;/code&gt; 的差都小于等于 &lt;code&gt;$\gamma$&lt;/code&gt; 。设 &lt;code&gt;$\delta=2k\exp{(-2\gamma^{2}m)}$&lt;/code&gt; 则有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$m \geq \frac{1}{2\gamma^{2}}\log{\frac{2k}{\delta}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;上式如果满足，则 &lt;code&gt;$|\epsilon(h)-\hat{\epsilon(h)}|\leq \gamma$&lt;/code&gt; 对 &lt;code&gt;$h\in\mathcal{H}$&lt;/code&gt; 成立的概率至少为 &lt;code&gt;$1-\delta$&lt;/code&gt; 。一个给定的算法达到一定水平的表现所需训练集的大小 &lt;code&gt;$m$&lt;/code&gt; 叫做该算法的 &lt;code&gt;样本复杂度&lt;/code&gt; (sample complexity) 。&lt;/p&gt;
+
+&lt;p&gt;定义 &lt;code&gt;$h^{*}=\arg{\min_{h\in\mathcal{H}}{\epsilon(h)}}$&lt;/code&gt; 为 &lt;code&gt;$\mathcal{H}$&lt;/code&gt; 中最佳的假设。注意这里 &lt;code&gt;$h^{*}$&lt;/code&gt; 和 &lt;code&gt;$\hat{h}$&lt;/code&gt; 的区别。有以下关系：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+\epsilon(\hat{h}) &amp;amp;\leq&amp;amp; \hat{\epsilon}(\hat{h})+\gamma \\
+&amp;amp;\leq&amp;amp; \hat{\epsilon}(h^{*})+\gamma \\
+&amp;amp;\leq&amp;amp; \epsilon(h^{*})+2\gamma
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;上面的关系表明， &lt;code&gt;$\hat{h}$&lt;/code&gt; 的一般误差最多比 &lt;code&gt;$\mathcal{H}$&lt;/code&gt; 中最佳的假设差出 &lt;code&gt;$2\gamma$&lt;/code&gt; 。可以给出定理：&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;定理&lt;/strong&gt; 令 &lt;code&gt;$|\mathcal{H}|=k$&lt;/code&gt; ，并固定 &lt;code&gt;$m, \delta$&lt;/code&gt; 的值。至少有 &lt;code&gt;$1-\delta$&lt;/code&gt; 的概率有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\epsilon(\hat{h})\leq(\min_{h\in\mathcal{H}}\epsilon(h))+2\sqrt{\frac{1}{2m}\log{\frac{2k}{\delta}}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;推论&lt;/strong&gt; 固定 &lt;code&gt;$\gamma$&lt;/code&gt; 和 &lt;code&gt;$\delta$&lt;/code&gt; 的值，并且对 &lt;code&gt;$m$&lt;/code&gt; 求解，我们可以得到这些限制：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\begin{eqnarray}
+m &amp;amp;\geq&amp;amp; \frac{1}{2\gamma^2} \log{\frac{2k}{\delta}} \\ 
+&amp;amp;=&amp;amp; O(\frac{1}{\gamma^2} \log{\frac{k}{\delta}})
+\end{eqnarray}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;mathcal-h-是无限集合时&#34;&gt;&lt;code&gt;$\mathcal{H}$&lt;/code&gt; 是无限集合时&lt;/h1&gt;
+
+&lt;p&gt;给定一个点的集合 &lt;code&gt;$S=\{x^{(i)},\ldots,x^{(d)}\}$&lt;/code&gt; ，如果 &lt;code&gt;$\mathcal{H}$&lt;/code&gt; 可以把集合 &lt;code&gt;$S$&lt;/code&gt; 中任意组合的点区分开，那么它就 &lt;code&gt;打碎&lt;/code&gt; 了这个集合。给定某个假设的集合 &lt;code&gt;$\mathcal{H}$&lt;/code&gt; ，定义它可以打碎的最大的集合的数量为它的 &lt;code&gt;VC纬度&lt;/code&gt; ，写作 &lt;code&gt;$VC(\mathcal{H})$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;例如，平面上有 3 个点，无论它们的标签如何分配，如何组合，包含形如 &lt;code&gt;$(h(x)=1\{\theta_0+\theta_1 x_1+\theta_2 x_2 \geq 0\})$&lt;/code&gt; 假设的假设集合 &lt;code&gt;$\mathcal{H}$&lt;/code&gt; 都以把它们分开，所以 &lt;code&gt;$VC(\mathcal{H})=3$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;定理&lt;/strong&gt; 给定 &lt;code&gt;$\mathcal{H}$&lt;/code&gt; ，令 &lt;code&gt;$d=VC(\mathcal{H})$&lt;/code&gt; 。则有至少为 &lt;code&gt;$1-\delta$&lt;/code&gt; 的概率，对于所有 &lt;code&gt;$h\in\mathcal{H}$&lt;/code&gt; 有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$|\epsilon(h)-\hat{\epsilon}(h)| \leq O(\sqrt{\frac{d}{m}\log{\frac{m}{d}}+\frac{1}{m}\log{\frac{1}{\delta}}})$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;换句话说，如果一个假设集有有限的 VC 维度，那么 &lt;code&gt;$m$&lt;/code&gt; 很大时就会发生统一收敛。同样有以下推论：&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;推论&lt;/strong&gt; 令 &lt;code&gt;$|\epsilon(h)-\hat{\epsilon}(h)| \leq \gamma$&lt;/code&gt; 至少以 &lt;code&gt;$1-\delta$&lt;/code&gt; 的概率对所有 &lt;code&gt;$h\in\mathcal{H}$&lt;/code&gt; 成立 (也就是 &lt;code&gt;$\epsilon(\hat{h})\leq\epsilon(h^{*})+2\gamma$&lt;/code&gt;)，它满足 &lt;code&gt;$m=O_{\gamma,\delta}(d)$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;可以得到的结论是必要的训练集的大小和 &lt;code&gt;$\mathcal{H}$&lt;/code&gt; 参数的数量线性相关。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>机器学习 第五章 支持向量机</title>
+      <link>https://knightf.coding.me/post/support-vector-machine/</link>
+      <pubDate>Fri, 10 Mar 2017 16:43:00 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/support-vector-machine/</guid>
+      <description>
+
+&lt;h1 id=&#34;边界&#34;&gt;边界&lt;/h1&gt;
+
+&lt;p&gt;在逻辑回归中，如果预测结果是 &lt;code&gt;$y=0$&lt;/code&gt; 并且 &lt;code&gt;$\theta^{T}x$&lt;/code&gt; 远远小于 0 ，我们可以说这次预测是很可信的。反过来如果 &lt;code&gt;$y=1$&lt;/code&gt; 而且 &lt;code&gt;$\theta^{T}x$&lt;/code&gt; 远远大于 0 ，那么也可以说这个预测是很可信的。&lt;/p&gt;
+
+&lt;p&gt;如果我们用这种思路来设计机器学习模型的话，也是有理可循的。假如，我们构建了一个可以把样本分成两类的超平面，样本里有 3 个点 A 、 B 和 C 。这三个点都在超平面的一侧，被这超平面分为一类。点 A 离超平面最远，我们就觉得对 A 作出的分类预测是很可信的；点 C 离超平面最近，我们就觉得 C 是边界上的样本。所以我们认为如果我们有一个数据集，并且能够找到一个超平面离数据集里的点都有一定距离，就可以很好的分类了。&lt;/p&gt;
+
+&lt;h1 id=&#34;符号&#34;&gt;符号&lt;/h1&gt;
+
+&lt;p&gt;现在我们用 -1 和 1 来表示数据集中的两类结果，用参数 &lt;code&gt;$w$&lt;/code&gt; ， &lt;code&gt;$b$&lt;/code&gt; 来表示我们的分类器：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$h_{w,b}(x)=g(w^{T}x+b)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这里如果 &lt;code&gt;$z\geq0$&lt;/code&gt; ， &lt;code&gt;$g(z)=1$&lt;/code&gt; ，其他情况 &lt;code&gt;$g(z)=-1$&lt;/code&gt; 。需要注意的是，这里我们直接计算了结果是 1 还是 -1 ，不再经过似然函数之类的中间过程了。&lt;/p&gt;
+
+&lt;h1 id=&#34;函数距离和几何距离&#34;&gt;函数距离和几何距离&lt;/h1&gt;
+
+&lt;p&gt;给定样本 &lt;code&gt;$(x^{(i)},y^{(i)})$&lt;/code&gt; ，定义它的 &lt;code&gt;函数距离&lt;/code&gt; 为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\hat{\gamma}^{(i)}=y^{(i)}(w^{T}x+b)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;从我们刚才的思路出发，距离应该越大越好。如果 &lt;code&gt;$y^{(i)}=1$&lt;/code&gt; ，那么 &lt;code&gt;$w^{T}x+b$&lt;/code&gt; 应该是一个很大的正数；如果 &lt;code&gt;$y^{(i)}=-1$&lt;/code&gt; ，那么 &lt;code&gt;$w^{T}x+b$&lt;/code&gt; 应该是一个很大的负数。只有符合这样规律的 &lt;code&gt;$w^{T}x+b$&lt;/code&gt; 才符合我们的预期。但是这个定义有一点不好的地方在于，如果我们调整 &lt;code&gt;$w$&lt;/code&gt; 和 &lt;code&gt;$b$&lt;/code&gt; 的值， &lt;code&gt;$h_{w,b}(x)$&lt;/code&gt; 的输出不会改变，但是我们刚才定义的函数距离的数值却会变化，影响我们对实际距离的判断。&lt;/p&gt;
+
+&lt;p&gt;所以我们定义 &lt;code&gt;几何距离&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\gamma^{(i)}=y^{(i)}((\frac{w}{||w||})^{T}x^{(i)}+\frac{b}{||w||})$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这里 &lt;code&gt;$w$&lt;/code&gt; 和 &lt;code&gt;$b$&lt;/code&gt; 都除以 &lt;code&gt;$||w||$&lt;/code&gt; ，所以如果我们再改变 &lt;code&gt;$w$&lt;/code&gt; 和 &lt;code&gt;$b$&lt;/code&gt; 的比例，几何距离是不会改变的。所以当拟合 &lt;code&gt;$w$&lt;/code&gt; 和 &lt;code&gt;$b$&lt;/code&gt; 时，就可以人为地设定一些有关比例的限制。我们定义一个训练集的几何距离是所有样本的几何距离中最小的一个：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\gamma=\min_{i=1,...,m}\gamma^{(i)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;拉格朗日对偶问题&#34;&gt;拉格朗日对偶问题&lt;/h1&gt;
+
+&lt;p&gt;&lt;code&gt;中略&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;最优距离分类器&#34;&gt;最优距离分类器&lt;/h1&gt;
+
+&lt;p&gt;先只考虑样本空间是可以被超平面划分的情况。有以下的优化问题：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\min_{\gamma,w,b} &amp;amp;&amp;amp; \frac{1}{2}{||w||}^2 \\
+s.t. &amp;amp;&amp;amp; y^{(i)}(w^{T}x^{(i)}+b)\geq1, i=1,...,m
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;上面的优化问题有一个中凸二次目标方程和线性约束。它的解就是一个 &lt;code&gt;最优距离分类器&lt;/code&gt; 。这个优化问题已经可以用现有的代码解决了，但我们还是要用拉格朗日对偶问题将表达式求出，会发现一些有趣的现象。&lt;/p&gt;
+
+&lt;p&gt;以上面的优化问题为拉格朗日对偶问题中的原问题，我们可以得到限制条件为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$g_{i}(w)=-y^{(i)}(w^{T}x^{(i)}+b)+1\leq0$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;由 KKT 对偶补充条件我们可以知道，只有样本的函数距离等于 1 时才有 &lt;code&gt;$\alpha_i\geq0$&lt;/code&gt; 。所以只有离分割的超平面最近的点所代表的样本， &lt;code&gt;$\alpha_i$&lt;/code&gt; 才是非零的值。而这些点，就叫做 &lt;code&gt;支持向量&lt;/code&gt; (support vector) 。构建该问题的拉格朗日算子得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\mathcal{L}(w,b,\alpha)=\frac{1}{2}{||w||}^2-\sum_{i=1}^m{a_i[y^{(i)}(w^{T}x^{(i)}+b)-1]}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;接下来写出该问题的对偶形式。先以 &lt;code&gt;$w$&lt;/code&gt; 和 &lt;code&gt;$b$&lt;/code&gt; 为参数最小化 &lt;code&gt;$\mathcal{L}(w,b,\alpha)$&lt;/code&gt; 以得到 &lt;code&gt;$\theta_{\mathcal{D}}$&lt;/code&gt; 。令 &lt;code&gt;$\mathcal{L}$&lt;/code&gt; 对 &lt;code&gt;$w$&lt;/code&gt; 和 &lt;code&gt;$b$&lt;/code&gt; 的偏导数等于 0 得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\nabla_{w}\mathcal{L}(w,b,\alpha) &amp;amp;=&amp;amp; w-\sum_{i=1}^m{\alpha_{i}y^{(i)}x^{(i)}}=0 \\
+w &amp;amp;=&amp;amp; \sum_{i=1}^m{\alpha_{i}y^{(i)}x^{(i)}} \\
+\frac{\partial}{\partial{b}}\mathcal{L}(w,b,\alpha) &amp;amp;=&amp;amp; \sum_{i=1}^m{\alpha_{i}y^{(i)}} = 0
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;我们应用上面的式子，可以得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\mathcal{L}(w,b,\alpha) &amp;amp;=&amp;amp; \sum_{i=1}^m{\alpha_i}-\frac{1}{2}\sum_{i,j=1}^m{y^{(i)}y^{(j)}\alpha_{i}\alpha_{j}(x^{(i)})^{T}x^{(j)}}-b\sum_{i=1}^m{\alpha_{i}y^{(i)}} \\
+&amp;amp;=&amp;amp; \sum_{i=1}^m{\alpha_i}-\frac{1}{2}\sum_{i,j=1}^m{y^{(i)}y^{(j)}\alpha_{i}\alpha_{j}(x^{(i)})^{T}x^{(j)}}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;那么再加上一个一直是隐性的约束条件 &lt;code&gt;$\alpha_i\geq0$&lt;/code&gt; ，我们就可以写出下面的对偶优化问题：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\max_{\alpha} &amp;amp;&amp;amp; W(\alpha)=\sum_{i=1}^m{\alpha_i}-\frac{1}{2}\sum_{i,j=1}^m{y^{(i)}y^{(j)}\alpha_i\alpha_j\langle{x^{(i)},x^{(j)}}\rangle} \\
+s.t. &amp;amp;&amp;amp; \alpha_i\geq0, i=1,...,m \\
+&amp;amp;&amp;amp; \sum_{i=1}^m{\alpha_{i}y^{(i)}}=0
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这样我们不用再去解决原始问题而直接考虑这个对偶问题就好了。如果我们能通过某种算法（稍后谈到）求解到 &lt;code&gt;$\alpha$&lt;/code&gt; 的值，那么就有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+w^* &amp;amp;=&amp;amp; \sum_{i=1}^{m}{\alpha_{i}y^{(i)}x^{(i)}} \\
+b^* &amp;amp;=&amp;amp; -\frac{\max_{i:y^{(i)}=-1}{w^{*}}^{T}x^{(i)}+\min_{i:y^{(i)}=1}{w^{*}}^{T}x^{(i)}}{2}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;所以如果我们把 &lt;code&gt;$w$&lt;/code&gt; 的最优解带回 &lt;code&gt;$w^{T}x+b$&lt;/code&gt; 我们发现：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+w^{T}x+b &amp;amp;=&amp;amp; (\sum_{i=1}^{m}{\alpha_{i}y^{(i)}x^{(i)}})^{T}x+b \\
+&amp;amp;=&amp;amp; \sum_{i=1}^{m}{\alpha_{i}y^{(i)}\langle{x^{(i)},x}\rangle}+b
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;可以发现，做预测时需要计算的数量只依赖于输入的样本 &lt;code&gt;$x$&lt;/code&gt; 和训练集中样本的内积。进一步，由于非支持向量的 &lt;code&gt;$\alpha_i$&lt;/code&gt; 的值都是 0 ，所以最后计算的时候，我们只需要对那些支持向量的内积进行求和就可以了。&lt;/p&gt;
+
+&lt;h1 id=&#34;核&#34;&gt;核&lt;/h1&gt;
+
+&lt;p&gt;现在我们把样本原始包含的各种内容起个名字叫做 &lt;code&gt;属性&lt;/code&gt; (attribute) ，把可以直接输入给学习算法的、经过映射处理的样本原始内容叫做 &lt;code&gt;特征&lt;/code&gt; (feature) 。我们用符号 &lt;code&gt;$\phi$&lt;/code&gt; 代表 &lt;code&gt;特征映射&lt;/code&gt; (feature mapping) 的过程。所以按照 SVM 中的内积格式，它对应的 &lt;code&gt;核&lt;/code&gt; (kernel) 为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$K(x,z)=\phi(x)^{T}\phi(z)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这样之前算法中凡是出现 &lt;code&gt;$\langle{x, z}\rangle$&lt;/code&gt; 的地方我们都可以用 &lt;code&gt;$K(x,z)$&lt;/code&gt; 替换掉。现在考虑成本问题，如果 &lt;code&gt;$\phi(x)$&lt;/code&gt; 是维度非常高的向量，那么它的计算会非常耗时间。观察 &lt;code&gt;$\phi(x)$&lt;/code&gt; 和 &lt;code&gt;$\phi(z)$&lt;/code&gt; ，如果它们很近，那么它们的内积会很大；如果它们很远，比如近乎垂直，那么它们的内积很小。所以现在 &lt;code&gt;$K(x,z)$&lt;/code&gt; 可以被看作是一个衡量 &lt;code&gt;$x$&lt;/code&gt; 和 &lt;code&gt;$z$&lt;/code&gt; 相似程度的函数。那么如果我们选择一个可以衡量这个程度的函数：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$K(z,x)=\exp{(-\frac{{||x-z||}^2}{2\sigma^{2}})}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;那么这个核是不是能用在 SVM 中呢？回答是肯定的，这是 &lt;code&gt;高斯核&lt;/code&gt; (gaussian kernel) ，而且它对应的 &lt;code&gt;$\phi$&lt;/code&gt; 是无限维度的。我们先提出一个 &lt;code&gt;核矩阵&lt;/code&gt; (kernel matrix) 的概念。对于有 &lt;code&gt;$m$&lt;/code&gt; 个点的有限集合 &lt;code&gt;$\{x^{(i)},...,x^{(m)}\}$&lt;/code&gt; ，定义一个 m 阶的矩阵 &lt;code&gt;$K_{m}$&lt;/code&gt; ，它有 &lt;code&gt;${(K_m)}_{ij}=K(x^{(i)},x^{(j)})$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;有 &lt;code&gt;Mercer 定理&lt;/code&gt; ：&lt;code&gt;$K$&lt;/code&gt; 对于一个有限点集是一个有效的核的充要条件，是它对应的核矩阵是一个对称半正定矩阵。&lt;/p&gt;
+
+&lt;h1 id=&#34;广义化和不可分的情况&#34;&gt;广义化和不可分的情况&lt;/h1&gt;
+
+&lt;p&gt;为了解决样本空间不可分时的问题，我们改写我们的优化问题如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\min_{\gamma,w,b} &amp;amp;&amp;amp; \frac{1}{2}{||w||}^2+C\sum_{i=1}^{m}\xi_{i} \\
+s.t. &amp;amp;&amp;amp; y^{(i)}(w^{T}x^{(i)}+b)\geq{1-\xi_{i}},i=1,...,m \\
+&amp;amp;&amp;amp; \xi_{i}\geq{0},i=1,...,m
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;现在允许样本的函数距离小于 1 了，只不过小于 1 会导致目标函数的值变大。参数 &lt;code&gt;$C$&lt;/code&gt; 控制了惩罚力度的大小。接下来和之前一样，我们把优化问题的拉格朗日算子构造出来：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\mathcal{L}(w,b,\xi,\alpha,r) &amp;amp;=&amp;amp; \frac{1}{2}w^{T}w+C\sum_{i=1}^M{\xi_i} \\
+&amp;amp;&amp;amp; -\sum_{i=1}^m{\alpha_{i}[y^{(i)}(x^{T}w+b)-1+\xi_i]}-\sum_{i=1}^{m}r_i\xi_i
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;还是和之前一样，将对 &lt;code&gt;$w$&lt;/code&gt; 和 &lt;code&gt;$b$&lt;/code&gt; 的偏微分求出并设为 0 后，我们得到了关于 &lt;code&gt;$\alpha$&lt;/code&gt; 的对偶问题：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\max_{\alpha} &amp;amp;&amp;amp; W(\alpha)=\sum_{i=1}^{m}\alpha_i-\frac{1}{2}\sum_{i,j=1}^{m}y^{(i)}y^{(i)}\alpha_{i}\alpha_{j}\langle{x^{(i)},x^{(i)}}\rangle \\
+s.t. &amp;amp;&amp;amp; 0\leq{\alpha_i}\leq{C}, i=1,...,m \\
+&amp;amp;&amp;amp; \sum_{i=1}^{m}\alpha_{i}y^{(i)}=0
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;smo-算法&#34;&gt;SMO 算法&lt;/h1&gt;
+
+&lt;p&gt;根据 KKT 对偶互补条件，我们可以用来测试算法是否收敛：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\alpha_{i}=0 &amp;amp;\Rightarrow&amp;amp; y^{(i)}(w^{T}x^{(i)}+b)\geq1 \\
+\alpha_{i}=C &amp;amp;\Rightarrow&amp;amp; y^{(i)}(w^{T}x^{(i)}+b)\leq1 \\
+0&amp;lt;\alpha_{i}&amp;lt;C &amp;amp;\Rightarrow&amp;amp; y^{(i)}(w^{T}x^{(i)}+b)=1
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;坐标上升&#34;&gt;坐标上升&lt;/h2&gt;
+
+&lt;p&gt;考虑简单的优化问题，比如没有约束条件的：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\max_{\alpha}W(\alpha_1,\alpha_2,...,\alpha_m)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;坐标上升&lt;/code&gt; (coordinate ascent) 这种算法大致的思路是这样的：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;While (未收敛) {
+  For i = 1, ..., m, {
+    a(i) = 令 W 取最大值的 a(i) 的值
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;核心的思想就是每次循环的时候，对 &lt;code&gt;$W$&lt;/code&gt; 中的每一个 &lt;code&gt;$\alpha_i$&lt;/code&gt; 都做更新，并且每次更新的时候都把其他的 &lt;code&gt;$\alpha$&lt;/code&gt; 看作常数来优化 &lt;code&gt;$W$&lt;/code&gt; 的值。&lt;/p&gt;
+
+&lt;h2 id=&#34;smo&#34;&gt;SMO&lt;/h2&gt;
+
+&lt;p&gt;下面是我们想要求的(对偶)优化问题：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\max_{\alpha} &amp;amp;&amp;amp; W(\alpha)=\sum_{i=1}^{m}\alpha_{i}-\frac{1}{2}\sum_{i,j=1}^{m}y^{(i)}y^{(j)}\alpha_{i}\alpha_{j}\langle{x^{(i)},x^{(j)}}\rangle \\
+s.t. &amp;amp;&amp;amp; 0 \leq \alpha_{i} \leq C, i=1,...,m \\
+&amp;amp;&amp;amp; \sum_{i=1}^{m}\alpha_{i}y^{(i)}=0
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;我们遇到的第一个问题就是它不能直接应用刚才所说的坐标上升的算法。因为我们有约束条件 &lt;code&gt;$\sum_{i=1}^{m}\alpha_{i}y^{(i)}=0$&lt;/code&gt; ，所以我们试图改变 &lt;code&gt;$\alpha_{1}$&lt;/code&gt; 时，会有 &lt;code&gt;$\alpha_{1} = -y^{(1)}\sum_{i=2}^{m}\alpha_{i}y^{(i)}$&lt;/code&gt; 约束我们无法做到。&lt;/p&gt;
+
+&lt;p&gt;所以改变一个不可能，那么改变一对就可以了：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;直到收敛 {
+  1. 选择一对 a 来做更新。
+  2. 以 a(i) 和 a(j) 为变量优化 W(a) ，固定其他 a 的值。
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这也就是 SMO (sequential minimal optimization) 算法的应用了。它的收敛可以用本章开头提到的 3 个方程来判断。&lt;/p&gt;
+
+&lt;p&gt;那么具体算法是如何工作的呢？比如现在我们想要针对 &lt;code&gt;$\alpha_1$&lt;/code&gt; 和 &lt;code&gt;$\alpha_2$&lt;/code&gt; 优化 &lt;code&gt;$W(\alpha_1,\alpha_2,...,\alpha_m)$&lt;/code&gt; ，有如下关系：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\alpha_{1}y^{(1)}+\alpha_{2}y^{(2)}=-\sum_{i=3}^{m}\alpha_{i}y^{(i)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;因为等式右边的值是一个常数，用 &lt;code&gt;$\zeta$&lt;/code&gt; 简化等到一个二元一次方程：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\alpha_{1}y^{(1)}+\alpha_{2}y^{(2)}=\zeta$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;然后根据之前的约束条件有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+0 \leq \alpha_{1} \leq C \\
+0 \leq \alpha_{2} \leq C
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;所以空间中，刚才的二元一次方程就是一条直线，而之前的约束条件划出了一个正方形。所以我们可以找到满足所有约束条件的上界 &lt;code&gt;$H$&lt;/code&gt; 和 下界 &lt;code&gt;$L$&lt;/code&gt; 。接着通过二元一次方程可以得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\alpha_{1}=(\zeta-\alpha_{2}y^{(2)})y^{(1)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;接着代入 &lt;code&gt;$W(\alpha)$&lt;/code&gt; 得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$W(\alpha_1,\alpha_2,...,\alpha_m)=W((\zeta-\alpha_{2}y^{(2)})y^{(1)},\alpha_2,...,\alpha_m)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;经过几步代数过程就可以发现现在 &lt;code&gt;$W(\alpha)$&lt;/code&gt; 已经是一个形如 &lt;code&gt;$a\alpha_{2}^{2}+b\alpha_{2}+c$&lt;/code&gt; 的简单二次方程了。通过使它的导数为 0 ，可以求出最优值 &lt;code&gt;$\alpha_{2}^{新的未验证的}$&lt;/code&gt; 。接下来我们通过之前固定的上下界，验证它的合法性就可以了：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+\alpha_{2}^{新的}=
+\begin{cases}
+H, &amp;amp; \text{if $\alpha_{2}^{新的未验证的}&amp;gt;H$} \\
+\alpha_{2}^{新的未验证的}, &amp;amp; \text{if $L \leq \alpha_{2}^{新的未验证的} \leq H$} \\
+L, &amp;amp; \text{if $\alpha_{2}^{新的未验证的}&amp;lt;L$}
+\end{cases}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;最后得到 &lt;code&gt;$\alpha_{2}^{新的}$&lt;/code&gt; ，通过之前的二元一次方程就能计算出 &lt;code&gt;$\alpha_{1}^{新的}$&lt;/code&gt; 了。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>机器学习 第四章 生成学习算法</title>
+      <link>https://knightf.coding.me/post/generative-learning-algorithms/</link>
+      <pubDate>Tue, 07 Mar 2017 17:29:00 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/generative-learning-algorithms/</guid>
+      <description>
+
+&lt;p&gt;直接学习 &lt;code&gt;$p(y|x)$&lt;/code&gt; 的分布的算法（比如逻辑回归），或者试图直接找到样本空间到标签 &lt;code&gt;$\{0, 1\}$&lt;/code&gt; 之间的映射关系的算法（比如感知器），叫做 &lt;code&gt;区别学习算法&lt;/code&gt; (discriminative learning algorithms)。&lt;/p&gt;
+
+&lt;p&gt;而生成学习算法是相反的，它试图为 &lt;code&gt;$p(x|y)$&lt;/code&gt; 的分布建立模型。例如，我们用 &lt;code&gt;$y$&lt;/code&gt; 的值来代表结果：1 代表大象，0 代表狗，那么 &lt;code&gt;$p(x|y=1)$&lt;/code&gt; 则代表了大象的特征的分布，&lt;code&gt;$p(x|y=0)$&lt;/code&gt; 代表了狗的特征的分布。这样就可以用贝叶斯公式求出来 &lt;code&gt;$p(y|x)$&lt;/code&gt; 了：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(y|x)=\frac{p(x|y)p(y)}{p(x)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这里分母可以通过 &lt;code&gt;$p(x)=p(x|y=1)p(y=1)+p(x|y=0)p(y=0)$&lt;/code&gt; 计算出来。而如果我们是要计算 &lt;code&gt;$p(y|x)$&lt;/code&gt; 来做预测的话，我们并不需要真实计算出值，所以分母是不需要计算的。&lt;/p&gt;
+
+&lt;h1 id=&#34;高斯判别式分析-gaussian-discriminant-analysis&#34;&gt;高斯判别式分析 (gaussian discriminant analysis)&lt;/h1&gt;
+
+&lt;h2 id=&#34;多变量正态分布&#34;&gt;多变量正态分布&lt;/h2&gt;
+
+&lt;p&gt;多变量正太分布由两个参数构成， &lt;code&gt;期望向量&lt;/code&gt; (mean vector) &lt;code&gt;$\mu$&lt;/code&gt; 和 &lt;code&gt;协方差矩阵&lt;/code&gt; (covariance matrix)  &lt;code&gt;$\Sigma$&lt;/code&gt; 。它的密度公式如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(x;\mu,\Sigma)=\frac{1}{(2\pi)^{n/2}|\Sigma|^{1/2}}\exp{(-\frac{1}{2}(x-\mu)^T\Sigma^{-1}(x-\mu))}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中 &lt;code&gt;$|\Sigma|$&lt;/code&gt; 表示矩阵的行列式。而一个列向量的协方差可以按照这样的方法求得：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\text{Cov}(Z)=E[ZZ^T]-(E[Z])(E[Z])^T$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;高斯判别式分析模型&#34;&gt;高斯判别式分析模型&lt;/h2&gt;
+
+&lt;p&gt;如果输入样本 &lt;code&gt;$x$&lt;/code&gt; 是连续的随机变量，我们就可以用 GDA 模型：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+y &amp;amp;\sim&amp;amp; \text{Bernoulli}(\phi) \\
+x|y = 0 &amp;amp;\sim&amp;amp; \mathcal{N}(\mu_0,\Sigma) \\
+x|y = 1 &amp;amp;\sim&amp;amp; \mathcal{N}(\mu_1,\Sigma)
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;所以模型中的参数有 &lt;code&gt;$\phi$&lt;/code&gt; ， &lt;code&gt;$\Sigma$&lt;/code&gt; ， &lt;code&gt;$\mu_0$&lt;/code&gt; 和 &lt;code&gt;$\mu_1$&lt;/code&gt; 。对数似然函数如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+l(\phi,\mu_0,\mu_1,\Sigma) &amp;amp;=&amp;amp; \log{\prod_{i=1}^m p(x^{(i)},y^{(i)};\phi,\mu_0,\mu_1,\Sigma)} \\
+&amp;amp;=&amp;amp; \log{\prod_{i=1}^m p(x^{(i)}|y^{(i)};\mu_0,\mu_1,\Sigma)p(y^{(i)};\phi)}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;求 &lt;code&gt;$l$&lt;/code&gt; 的极大值我们有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\phi &amp;amp;=&amp;amp; \frac{1}{m}\sum_{i=1}^m1\{y^{(i)}=1\} \\
+\mu_0 &amp;amp;=&amp;amp; \frac{\sum_{i=1}^m1\{y^{(i)}=0\}x^{(i)}}{\sum_{i=1}^m1\{y^{(i)}=0\}} \\
+\mu_1 &amp;amp;=&amp;amp; \frac{\sum_{i=1}^m1\{y^{(i)}=1\}x^{(i)}}{\sum_{i=1}^m1\{y^{(i)}=1\}} \\
+\Sigma &amp;amp;=&amp;amp; \frac{1}{m}\sum_{i=1}^{m}(x^{(i)}-\mu_{y^{(i)}})(x^{(i)}-\mu_{y^{(i)}})^T
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;讨论-gda-和逻辑回归&#34;&gt;讨论：GDA 和逻辑回归&lt;/h2&gt;
+
+&lt;p&gt;总的来说 GDA 需要我们对数据做大胆的假设，而且学习效率高，不需要有很多的样本。只要我们对于样本分布的假设是正确的，GDA 的表现比逻辑回归好很多。&lt;/p&gt;
+
+&lt;p&gt;相比较而言逻辑回归不需要我们做出什么假设，鲁棒性也更高。而且相对应的，如果样本确实不符合高斯分布的特征，那么逻辑回归肯定就要强于 GDA 了。&lt;/p&gt;
+
+&lt;h1 id=&#34;朴素贝叶斯&#34;&gt;朴素贝叶斯&lt;/h1&gt;
+
+&lt;p&gt;现在我们来考虑样本中的变量是离散的情况，比如我们现在要做一个垃圾邮件的分类器：是垃圾邮件或不是。这可以算做是众多 &lt;code&gt;文本分类&lt;/code&gt; 问题中的一个。&lt;/p&gt;
+
+&lt;p&gt;我们用一个长度等于我们词典容量的特征向量来表示我们的样本，每一位对应词典中的一个单词。如果某邮件中有词典中的某个词，那对应的这一位就是 1 ， 反之就是 0 。&lt;/p&gt;
+
+&lt;p&gt;我们可以开始对 &lt;code&gt;$p(x|y)$&lt;/code&gt; 建模了。但有一个关于向量长度的问题。如果我们的词典中有 50000 个单词，那么我们模型里的参数就得有 &lt;code&gt;$2^{50000}-1$&lt;/code&gt; 个，这显然太多了。&lt;/p&gt;
+
+&lt;p&gt;这里我们做一个非常大胆的假设：所有的 &lt;code&gt;$x_i$&lt;/code&gt; 的概率都是独立的。这个假设叫做 &lt;code&gt;朴素贝叶斯假设&lt;/code&gt; ，基于这个假设的分类器就叫做 &lt;code&gt;朴素贝叶斯分类器&lt;/code&gt; 。所以我们就有：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(x_1,...,x_50000|y)=\prod_{i=1}^n{p(x_i|y)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;模型里的三个参数如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\phi_{i|y=1} &amp;amp;=&amp;amp; p(x_i=1|y=1) \\
+\phi_{i|y=0} &amp;amp;=&amp;amp; p(x_i=1|y=0) \\
+\phi_y &amp;amp;=&amp;amp; p(y=1)
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;写出数据的联合似然概率如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\mathcal{L}(\phi_y,\phi_{j|y=0},\phi_{j|y=1})=\prod_{i=1}^m{p(x^{(i)},y^{(i)})}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;求极大值后得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\phi_{j|y=1} &amp;amp;=&amp;amp; \frac{\sum_{i=1}^m{1\{x_j^{(i)}=1 \wedge y^{(i)}=1\}}}{\sum_{i=1}^m{1\{y^{(i)}=1\}}} \\
+\phi_{j|y=0} &amp;amp;=&amp;amp; \frac{\sum_{i=1}^m{1\{x_j^{(i)}=1 \wedge y^{(i)}=0\}}}{\sum_{i=1}^m{1\{y^{(i)}=0\}}} \\
+\phi_y &amp;amp;=&amp;amp; \frac{\sum_{i=1}^m{1\{y^{(i)}=1\}}}{m}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;求出上面的所有参数之后，就可以对一个新的样本进行预测了，只需要计算：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+p(y=1|x) &amp;amp;=&amp;amp; \frac{p(x|y=1)p(y=1)}{p(x)} \\
+&amp;amp;=&amp;amp; \frac{(\prod_{i=1}^n{p(x_i|y=1)})p(y=1)}{(\prod_{i=1}^n{p(x_i|y=1)})p(y=1)+(\prod_{i=1}^n{p(x_i|y=0)})p(y=0)}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;然后看样本在哪类中的后验概率更高就可以了。&lt;/p&gt;
+
+&lt;h2 id=&#34;laplace-平滑&#34;&gt;Laplace 平滑&lt;/h2&gt;
+
+&lt;p&gt;考虑训练样本中没有出现过词典中某个词的情况。比如词典中的第 35000 个词 &lt;code&gt;膜法&lt;/code&gt; 在所有的训练样本中都没有出现过，那么它的 &lt;code&gt;$\phi_{y=1}$&lt;/code&gt; 和 &lt;code&gt;$\phi_{y=0}$&lt;/code&gt; 都将会是 0 。所以如果我们之后做分类时输入的样本中出现了 &lt;code&gt;膜法&lt;/code&gt; 这个词的话，会出现 &lt;code&gt;$p(y=1|x)=\frac{0}{0}$&lt;/code&gt; 的情况，这显然是不符合逻辑的。&lt;/p&gt;
+
+&lt;p&gt;所以需要使用 &lt;code&gt;Laplace 平滑&lt;/code&gt; 来计算 &lt;code&gt;$\phi_j$&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\phi_j=\frac{\sum_{i=1}^m{1\{z^{(i)}=j\}+1}}{m+k}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中 &lt;code&gt;$k$&lt;/code&gt; 是 &lt;code&gt;$y$&lt;/code&gt; 可能的结果的数量，拿之前垃圾邮件分类的例子来说，因为结果只有两类，是垃圾邮件或者不是，所以 &lt;code&gt;$k=2$&lt;/code&gt;。&lt;/p&gt;
+
+&lt;h2 id=&#34;文本分类的事件模型&#34;&gt;文本分类的事件模型&lt;/h2&gt;
+
+&lt;p&gt;还是用垃圾邮件分类的例子，&lt;code&gt;多项式事件模型&lt;/code&gt; 认为一封邮件需要首先被发件人定义为是不是垃圾邮件。然后发件人开始确定第一个词 &lt;code&gt;$x_1$&lt;/code&gt; ，并且事件符合一个多项式分布 &lt;code&gt;$p(x_i|y)$&lt;/code&gt; 。然后他重复该过程直到写出了 &lt;code&gt;$n$&lt;/code&gt; 个词，完成了邮件。所以这封邮件出现的概率就是 &lt;code&gt;$\prod_{i=1}^n{p(x_i|y)}$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;所以对有 &lt;code&gt;$m$&lt;/code&gt; 个样本的训练集，数据的相似度就是：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\mathcal{L}(\phi,\phi_{k|y=0},\phi_{k|y=1})=\prod_{i=1}^m{(\prod_{j=1}^{n_i}{p(x_j^{(i)}|y;\phi_{k|y=0},\phi_{k|y=1})})p(y^{(i)};\phi_y)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;最大化上式并应用 Laplace 平滑后，可以得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\phi_{k|y=1} &amp;amp;=&amp;amp; \frac{\sum_{i=1}^m\sum_{j=1}^{n_i}{1\{x_j^{(i)}=k{\wedge}y^{(i)}=1\}+1}}{\sum_{i=1}^m{1\{y^{(i)}=1\}n_i+|V|}} \\
+\phi_{k|y=0} &amp;amp;=&amp;amp; \frac{\sum_{i=1}^m\sum_{j=1}^{n_i}{1\{x_j^{(i)}=k{\wedge}y^{(i)}=0\}+1}}{\sum_{i=1}^m{1\{y^{(i)}=0\}n_i+|V|}} \\
+\phi_y &amp;amp;=&amp;amp; \frac{\sum_{i=1}^m{1\{y^{(i)}=1\}}}{m}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;由于我们现在求 &lt;code&gt;$\phi$&lt;/code&gt; 是建立在单词为单元的基础之上的，所以应用 Laplace 平滑分母加上的值应该是我们词典的大小，也就是 &lt;code&gt;$|V|$&lt;/code&gt; 的含义。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>机器学习 第三章 广义线性模型</title>
+      <link>https://knightf.coding.me/post/generalized-linear-models/</link>
+      <pubDate>Wed, 01 Mar 2017 11:32:00 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/generalized-linear-models/</guid>
+      <description>
+
+&lt;h1 id=&#34;指数家族概率分布&#34;&gt;指数家族概率分布&lt;/h1&gt;
+
+&lt;p&gt;我们定义能够按照下式的格式写出的概率分布，就属于 &lt;code&gt;指数家族概率分布&lt;/code&gt; (exponential family) ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(y;\eta)=b(y)exp(\eta^TT(y)-a(\eta))$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;$\eta$&lt;/code&gt; - &lt;code&gt;自然参数&lt;/code&gt; (natural parameter)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;$T(y)$&lt;/code&gt; - &lt;code&gt;充分统计量&lt;/code&gt; (sufficient statistic)&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;$a(\eta)$&lt;/code&gt; - &lt;code&gt;对数配分函数&lt;/code&gt; (partition function)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;固定的 &lt;code&gt;$T$&lt;/code&gt; ， &lt;code&gt;$a$&lt;/code&gt; 和  &lt;code&gt;$b$&lt;/code&gt; 定义了一组以 &lt;code&gt;$\eta$&lt;/code&gt; 为参数的概率分布；调整 &lt;code&gt;$\eta$&lt;/code&gt; 就可以得到不同的分布。&lt;/p&gt;
+
+&lt;h2 id=&#34;伯努利分布&#34;&gt;伯努利分布&lt;/h2&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+P(y;\phi) &amp;amp;=&amp;amp; \phi^y(1-\phi)^{1-y} \\
+&amp;amp;=&amp;amp; \exp(y\log{\phi}+(1-y)\log{(1-\phi)}) \\
+&amp;amp;=&amp;amp; \exp((\log{(\frac{\phi}{1-\phi})})y+\log{(1-\phi)})
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\eta &amp;amp;=&amp;amp; \log{(\frac{\phi}{1-\phi})} \\
+T(y) &amp;amp;=&amp;amp; y \\
+a(\eta) &amp;amp;=&amp;amp; -\log{(1-\phi)} \\
+&amp;amp;=&amp;amp; \log{(1+e^\eta)} \\
+b(y) &amp;amp;=&amp;amp; 1
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;值得注意的是，由于 &lt;code&gt;$\eta=\log{(\phi/(1-\phi))}$&lt;/code&gt; ，我们就可以反推出 &lt;code&gt;$\phi=1/(1+e^{-\eta})$&lt;/code&gt; ，也就是 &lt;code&gt;S函数&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;h2 id=&#34;高斯分布&#34;&gt;高斯分布&lt;/h2&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+p(y;\mu) &amp;amp;=&amp;amp; \frac{1}{\sqrt{2\pi}}\exp{(-\frac{1}{2}(y-\mu)^2)} \\
+&amp;amp;=&amp;amp; \frac{1}{\sqrt{2\pi}}\exp{(-\frac{1}{2}y^2)}\exp{(\mu y-\frac{1}{2}\mu^2)}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\eta &amp;amp;=&amp;amp; \mu \\
+T(y) &amp;amp;=&amp;amp; y \\
+a(\eta) &amp;amp;=&amp;amp; \mu^2/2 \\
+&amp;amp;=&amp;amp; \eta^2/2 \\
+b(y) &amp;amp;=&amp;amp; (1/\sqrt{2\pi})\exp{(-y^2/2)}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;构造广义线性模型&#34;&gt;构造广义线性模型&lt;/h1&gt;
+
+&lt;p&gt;我们可以看到伯努利分布和高斯分布都可以被写成指数家族分布的形式。下面我们来看看如何通过这样的指数家族分布来构造模型。&lt;/p&gt;
+
+&lt;p&gt;不论我们是要解决回归问题还是分类问题，我们都是想要得到一个可以由 &lt;code&gt;$x$&lt;/code&gt; 预测出 &lt;code&gt;$y$&lt;/code&gt; 的函数。试图用广义线性模型来解决这个问题，我们需要给出以下三个假设：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;1.&lt;/code&gt; &lt;code&gt;$y|x;\theta$&lt;/code&gt; 属于以 &lt;code&gt;$\eta$&lt;/code&gt; 为参数的指数家族概率分布。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;2.&lt;/code&gt; 给定 &lt;code&gt;$x$&lt;/code&gt; ，我们的目标是用 &lt;code&gt;$T(y)$&lt;/code&gt; 来预测值。在我们的例子中 &lt;code&gt;$T(y)=y$&lt;/code&gt;，所以这就是说我们希望我们的假设函数 &lt;code&gt;$h(x)$&lt;/code&gt; 可以满足 &lt;code&gt;$h(x)=E[y|x]$&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;3.&lt;/code&gt; 自然参数 &lt;code&gt;$\eta$&lt;/code&gt; 和输入的 &lt;code&gt;$x$&lt;/code&gt; 是线性相关的：&lt;code&gt;$\eta=\theta^Tx$&lt;/code&gt;。&lt;/p&gt;
+
+&lt;h2 id=&#34;普通最小平方-ordinary-least-squares&#34;&gt;普通最小平方 (ordinary least squares)&lt;/h2&gt;
+
+&lt;p&gt;设置目标变量 &lt;code&gt;$y$&lt;/code&gt; 是连续的并且概率呈高斯分布。从我们之前得到的式子中我们发现在高斯分布的情况下 &lt;code&gt;$\mu=\eta$&lt;/code&gt; ，所以：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+h_\theta(x) &amp;amp;=&amp;amp; E[y|x;\theta] \\
+&amp;amp;=&amp;amp; \mu \\
+&amp;amp;=&amp;amp; \eta \\
+&amp;amp;=&amp;amp; \theta^Tx
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;逻辑回归&#34;&gt;逻辑回归&lt;/h2&gt;
+
+&lt;p&gt;逻辑回归中 &lt;code&gt;$y$&lt;/code&gt; 的值不是 0 就是 1 ，所以我们采用伯努利分布来拟合。和上一节采用相同的思路，我们可以推导出：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+h_\theta(x) &amp;amp;=&amp;amp; E[y|x;\theta] \\
+&amp;amp;=&amp;amp; \phi \\
+&amp;amp;=&amp;amp; 1/(1+e^{-\eta}) \\
+&amp;amp;=&amp;amp; 1/(1+e^{-\theta^Tx})
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;softmax-回归&#34;&gt;Softmax 回归&lt;/h2&gt;
+
+&lt;p&gt;考虑 &lt;code&gt;$y$&lt;/code&gt; 可以取 &lt;code&gt;$k$&lt;/code&gt; 个值，例如不再是简单的分为两类而是多类的问题。这时我们就要考虑用多项式分布 (multinomial distribution) 了。&lt;/p&gt;
+
+&lt;p&gt;因为对于 &lt;code&gt;$k$&lt;/code&gt; 个可能的值，总是有 &lt;code&gt;$\sum_{i=1}^k\phi_i=1$&lt;/code&gt; ，所以我们只取 &lt;code&gt;$k-1$&lt;/code&gt; 个参数来建立模型。就有 &lt;code&gt;$p(y=k;\phi)=1-\sum_{i=1}^{k-1}\phi_i=\phi_k$&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;并且我们定义 &lt;code&gt;$T(y)$&lt;/code&gt; 是一个长度为 &lt;code&gt;$k-1$&lt;/code&gt; 的向量，用 &lt;code&gt;$(T(y))_i$&lt;/code&gt; 来表示 &lt;code&gt;$T(y)$&lt;/code&gt; 中的第 &lt;code&gt;$i$&lt;/code&gt; 个元素。那么这个向量里面的值怎么确定呢？我们先引入 &lt;code&gt;$1\{\cdot\}$&lt;/code&gt; 这个表示法，&lt;code&gt;$1\{True\}=1, 1\{False\}=0$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;现在可以方便的表示 &lt;code&gt;$T(y)$&lt;/code&gt; 和 &lt;code&gt;$y$&lt;/code&gt; 的关系：&lt;code&gt;$(T(y))_i=1\{y=i\}$&lt;/code&gt; 。并且也得到 &lt;code&gt;$E[(T(y))_i]=P(y=i)=\phi_i$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;接下来我们写成指数家族的形式（过程略）：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(y;\phi)=b(y)\exp{(\eta^TT(y)-a(\eta))}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\eta &amp;amp;=&amp;amp; 
+\begin{bmatrix}
+\log{(\phi_1/\phi_k)} \\
+\log{(\phi_2/\phi_k)} \\
+\vdots \\
+\log{(\phi_{k-1}/\phi_k)}
+\end{bmatrix} \\
+a(\eta) &amp;amp;=&amp;amp; -\log{(\phi_k)} \\
+b(y) &amp;amp;=&amp;amp; 1
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;从上面几个式子可以得到 &lt;code&gt;$\eta$&lt;/code&gt; 与 &lt;code&gt;$\phi$&lt;/code&gt; 之间的关系：&lt;code&gt;$\eta_i=\log{\frac{\phi_i}{\phi_k}}$&lt;/code&gt; 。而通过这个关系我们就可以得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\phi_i = \frac{e^{\eta_i}}{\sum_{j=1}^k e^{\eta_j}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;而这个表示 &lt;code&gt;$\eta$&lt;/code&gt; 到 &lt;code&gt;$\phi$&lt;/code&gt; 映射关系的函数就叫做 &lt;code&gt;Softmax 函数&lt;/code&gt; 。由之前的第3个假设我们定义 &lt;code&gt;$\eta_i=\theta_i^Tx$&lt;/code&gt; ，所以我们的概率模型就可以有如下表示：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+p(y=i|x;\theta) &amp;amp;=&amp;amp; \phi_i \\
+&amp;amp;=&amp;amp; \frac{e^{\eta_i}}{\sum_{j=1}^k e^{\eta_j}} \\
+&amp;amp;=&amp;amp; \frac{e^{\theta_i^Tx}}{\sum_{j=1}^k e^{\theta_j^Tx}}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这个可以对 &lt;code&gt;$y$&lt;/code&gt; 有 &lt;code&gt;$k$&lt;/code&gt; 种情形进行分类的模型叫做 &lt;code&gt;Softmax 回归&lt;/code&gt; ，是逻辑回归的一种展开形式。这个模型的假设函数如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+h_\theta(x) &amp;amp;=&amp;amp; E[T(y)|x;\theta] \\
+&amp;amp;=&amp;amp; \begin{bmatrix}\phi_1\\\phi_2\\\vdots\\\phi_{k-1}\end{bmatrix} \\
+&amp;amp;=&amp;amp; \begin{bmatrix}
+\frac{\exp{(\theta_1^T x)}}{\sum_{j=1}^k\exp{(\theta_j^T x)}} \\
+\frac{\exp{(\theta_2^T x)}}{\sum_{j=1}^k\exp{(\theta_j^T x)}} \\
+\vdots \\
+\frac{\exp{(\theta_{k-1}^T x)}}{\sum_{j=1}^k\exp{(\theta_j^T x)}}
+\end{bmatrix}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;最后，我们再来看看如何求出 &lt;code&gt;$\theta$&lt;/code&gt; 。假设我们的训练集里有 &lt;code&gt;$m$&lt;/code&gt; 个样本，我们写出对数最大似然函数：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+l(\theta) &amp;amp;=&amp;amp; \sum_{i=1}^m\log{p(y^{(i)}|x^{(i)};\theta)} \\
+&amp;amp;=&amp;amp; \sum_{i=1}^m\log{\prod_{l=1}^k(\frac{e^{\theta_l^T x^{(i)}}}{\sum_{j=1}^ke^{\theta_j^T x^{(i)}}})^{1\{y^{(i)}=l\}}}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;现在不论是用梯度上升法还是牛顿法都可以求解了。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>机器学习 第二章 分类与逻辑回归</title>
+      <link>https://knightf.coding.me/post/classification-and-logistic-regression/</link>
+      <pubDate>Wed, 22 Feb 2017 11:58:30 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/classification-and-logistic-regression/</guid>
+      <description>
+
+&lt;p&gt;我们现在来看看分类的问题，只简单考虑 &lt;code&gt;二元分类&lt;/code&gt; 的情况，也就是 &lt;code&gt;$y$&lt;/code&gt; 只能取值 0 或者 1 。0 代表 &lt;code&gt;否定类&lt;/code&gt; ，1 代表 &lt;code&gt;肯定类&lt;/code&gt;。对于 &lt;code&gt;$x^{(i)}$&lt;/code&gt; 样本，对应的 &lt;code&gt;$y^{(i)}$&lt;/code&gt; 就是对应的 &lt;code&gt;标记&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;h1 id=&#34;逻辑回归&#34;&gt;逻辑回归&lt;/h1&gt;
+
+&lt;p&gt;直观地看，我们的 &lt;code&gt;$h_\theta(x)$&lt;/code&gt; 现在肯定是只能输出 0 到 1 之间的值：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$h_\theta(x)=g(\theta^Tx)=\frac{1}{1+e^{-\theta^Tx}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;里面的 &lt;code&gt;$g(z)$&lt;/code&gt; 等于：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$g(z)=\frac{1}{1+e^{-z}}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这个函数叫做 &lt;code&gt;逻辑函数&lt;/code&gt; (logistic function) 或者 &lt;code&gt;S函数&lt;/code&gt; (sigmoid function)。和以前一样我们默认 &lt;code&gt;$x_0=1$&lt;/code&gt; ，就可以让 &lt;code&gt;$\theta^Tx=\theta_0+\sum_{j=1}^n\theta_jx_j$&lt;/code&gt; 。然后我们也可以先求出 &lt;code&gt;S函数&lt;/code&gt; 的导数：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$g&#39;(z)=g(z)(1-g(z))$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;那我们怎么找到合适的 &lt;code&gt;$\theta$&lt;/code&gt; 值呢？我们不妨借鉴之前使用最大似然法求出成本函数的方法，先写出一些概率上的假设：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+P(y=1|x;\theta) &amp;amp;=&amp;amp; h_\theta(x) \\
+P(y=0|x;\theta) &amp;amp;=&amp;amp; 1-h_\theta(x)
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这个概率分布就可以被写成：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(y|x;\theta)=(h_\theta(x))^y(1-h_\theta(x))^{1-y}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;所以我们就可以写出相似度函数如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+L(\theta) &amp;amp;=&amp;amp; p(\vec{y}|X;\theta) \\ 
+&amp;amp;=&amp;amp; \prod_{i=1}^mp(y^{(i)}|x^{(i)};\theta) \\
+&amp;amp;=&amp;amp; \prod_{i=1}^m(h_\theta(x^{(i)}))^{y^{(i)}}(1-h_\theta(x^{(i)}))^{1-y^{(i)}}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;和之前一样，写出对数相似度函数：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+l(\theta) &amp;amp;=&amp;amp; \log{L(\theta)} \\
+&amp;amp;=&amp;amp; \sum_{i=1}^my^{(i)}\log{h(x^{(i)})}+(1-y^{(i)})\log{(1-h(x^{(i)}))}
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;同理我们如果最大化这个对数相似度函数，也可以采用梯度方法，只不过这次是梯度上升：&lt;code&gt;$\theta:=\theta+\alpha\nabla_\theta l(\theta)$&lt;/code&gt; 。下面我们针对某一对样本 &lt;code&gt;$(x, y)$&lt;/code&gt; 进行求导可以得到：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\frac{\partial}{\partial\theta_j}l(\theta)=(y-h_\theta(x))x_j$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;所以我们就得到了随机梯度上升的更新规则：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta_j:=\theta_j+\alpha(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;题外话-感知器学习算法&#34;&gt;题外话：感知器学习算法&lt;/h1&gt;
+
+&lt;p&gt;考虑我们现在如果希望假设函数只输出 0 或 1 ，那么我们的 &lt;code&gt;$g(z)$&lt;/code&gt; 函数肯定要做出修改如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$
+g(z)=
+\begin{cases}
+1, &amp;amp; \text{if $z\geq0$} \\
+0, &amp;amp; \text{if $z&amp;lt;0$}
+\end{cases}
+$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;然后我们让 &lt;code&gt;$h_\theta(x)=g(\theta^Tx)$&lt;/code&gt; ，并且使用下面的更新规则：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta_j:=\theta_j+\alpha(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;我们就得到了 &lt;code&gt;感知器学习算法&lt;/code&gt; (perceptron learning algorithm) 。虽然它看起来很像是我们之前讨论过的算法，但值得注意的是它其实是不能通过最大似然估计得到推导的，这一点很独特。&lt;/p&gt;
+
+&lt;h1 id=&#34;牛顿方法&#34;&gt;牛顿方法&lt;/h1&gt;
+
+&lt;p&gt;最大化对数似然函数 &lt;code&gt;$l(\theta)$&lt;/code&gt; 还有一种方法叫做牛顿方法 (Newton&amp;rsquo;s method)。对于某个实数函数有如下更新规则：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta:=\theta-\frac{f(\theta)}{f&#39;(\theta)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看出来这个方法背后的含义就是用这个实数函数在某一点的斜率构造一个一次函数然后不断逼近这个函数值为 0 的位置。那么如果要用这个方法来帮助我们最大化对数似然函数，自然就是这样的更新规则：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta:=\theta-\frac{l&#39;(\theta)}{l&#39;&#39;(\theta)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;在我们的逻辑回归里，&lt;code&gt;$\theta$&lt;/code&gt; 是一个向量。所以我们要稍稍扩展一下牛顿方法，使其可以支持多维的数据：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta:=\theta-H^{-1}\nabla_\theta l(\theta)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这个式子里面 &lt;code&gt;$\nabla_\theta l(\theta)$&lt;/code&gt; 和之前一样是函数 &lt;code&gt;$l(\theta)$&lt;/code&gt; 对于 &lt;code&gt;$\theta_i$&lt;/code&gt; 的偏微分。&lt;code&gt;$H$&lt;/code&gt; 则是一个 n 阶的矩阵叫做 &lt;code&gt;海森矩阵&lt;/code&gt; ，它的每一个元素按照下面的规则确定：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$H_{ij}=\frac{\partial^2 l(\theta)}{\partial\theta_i\partial\theta_j}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;牛顿方法通常比起批量梯度下降来说更快达到收敛。但其实每一步的代价更高，因为我们要对海森矩阵求逆。但如果 n 的值不是很大的话，总体来说还是会更快的。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>机器学习 第一章 线性回归</title>
+      <link>https://knightf.coding.me/post/linear-regression/</link>
+      <pubDate>Fri, 17 Feb 2017 17:22:16 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/linear-regression/</guid>
+      <description>
+
+&lt;p&gt;对于由 &lt;code&gt;$m$&lt;/code&gt; 个 &lt;code&gt;$n$&lt;/code&gt; 维的特征向量 &lt;code&gt;$x_n$&lt;/code&gt; 构成的数据集，我们希望求得一个函数形如：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$h_\theta(x)=\theta_0+\theta_1x_1+\cdots+\theta_nx_n$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;来反应特征向量 &lt;code&gt;$x_n$&lt;/code&gt; 与其对应结果 &lt;code&gt;$y_n$&lt;/code&gt; 的关系。&lt;/p&gt;
+
+&lt;p&gt;为了简化我们的书写，默认 &lt;code&gt;$x_0=1$&lt;/code&gt;，有👇式：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$h(x)=\sum_{i=0}^n\theta_ix_i=\theta^Tx$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看到 &lt;code&gt;$\theta$&lt;/code&gt; 与 &lt;code&gt;$x$&lt;/code&gt; 现在都是长度为 &lt;code&gt;$n+1$&lt;/code&gt; 的向量。&lt;/p&gt;
+
+&lt;p&gt;此处我们定义 &lt;code&gt;成本函数&lt;/code&gt; (cost function) 如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$J(\theta)=\frac{1}{2}\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;梯度下降&#34;&gt;梯度下降&lt;/h1&gt;
+
+&lt;p&gt;所以我们现在需要确定 &lt;code&gt;$\theta$&lt;/code&gt; 的值来让 &lt;code&gt;$J(\theta)$&lt;/code&gt; 取到最小值。采用梯度下降算法，不断更新 &lt;code&gt;$\theta$&lt;/code&gt; 的值直到收敛：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta_j:=\theta_j-\alpha\frac{\partial}{\partial\theta_j}J(\theta)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;此处 &lt;code&gt;$\alpha$&lt;/code&gt; 被称作 &lt;code&gt;学习速率&lt;/code&gt; 。把 &lt;code&gt;$J(\theta)$&lt;/code&gt; 带入👆的式子并求解偏微分后得到更新 &lt;code&gt;$\theta$&lt;/code&gt; 的规则如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta_j:=\theta_j+\alpha(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这被称作 &lt;code&gt;LMS&lt;/code&gt; (least mean squares) 更新规则。所以我们的算法就可以这样写：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;直到收敛 {&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;对每一个 j&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$\theta_j:=\theta_j+\alpha\sum_{i=1}^m(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;}&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这种方法叫做 &lt;code&gt;批量梯度下降&lt;/code&gt; (batch gradient descent) 。与之对应，还有一种方法是这样的：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;循环 {&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;i 从 1 循环至 m&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;对每一个 j&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$\theta_j:=\theta_j+\alpha(y^{(i)}-h_\theta(x^{(i)}))x_j^{(i)}$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;}&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;可以看到这种方法每处理一条训练集中的样本时，我们只根据当前样本误差做了计算并更新。这种方法叫做 &lt;code&gt;随机梯度下降&lt;/code&gt; (stochastic gradient descent) 。&lt;/p&gt;
+
+&lt;h1 id=&#34;常规方程&#34;&gt;常规方程&lt;/h1&gt;
+
+&lt;p&gt;除了采用梯度下降这种迭代算法来最小化 &lt;code&gt;$J$&lt;/code&gt; ，还可以直接用代数计算出值。我们定义 &lt;code&gt;设计矩阵&lt;/code&gt; &lt;code&gt;$X$&lt;/code&gt; 为 m 行 n 列的矩阵。 &lt;code&gt;$X$&lt;/code&gt; 的每一行都是一个样本所有特征的转置：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$X=\begin{bmatrix}(x^{(1)})^T\\(x^{(2)})^T\\\vdots\\(x^{(m)})^T\end{bmatrix}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;同样的我们定义 &lt;code&gt;$\vec y$&lt;/code&gt; 是包含对应所有样本的结果集：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\vec y=\begin{bmatrix}y^{(1)}\\y^{(2)}\\\vdots\\y^{(m)}\end{bmatrix}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这样我们就可以发现 &lt;code&gt;$X, \vec y$&lt;/code&gt; 与 &lt;code&gt;$J(\theta)$&lt;/code&gt; 之间的关系：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\frac{1}{2}(X\theta-\vec y)^T(X\theta-\vec y) &amp;amp;=&amp;amp; \frac{1}{2}\sum_{i=1}^m(h_\theta(x^{(i)})-y^{(i)})^2 \\
+&amp;amp;=&amp;amp; J(\theta)
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;进而我们就可以求得 &lt;code&gt;$J(\theta)$&lt;/code&gt; 的偏微分向量为：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\nabla J(\theta) &amp;amp;=&amp;amp; \nabla_\theta\frac{1}{2}(X\theta-\vec y)^T(X\theta-\vec y) \\
+&amp;amp;=&amp;amp; X^TX\theta-X^T\vec y
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;如果令 &lt;code&gt;$J$&lt;/code&gt; 取最小值，则令偏微分向量为零，得到了 &lt;code&gt;常规方程&lt;/code&gt; (normal equations) ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$X^TX\theta=X^T\vec y$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;我们就可以直接求得 &lt;code&gt;$\theta$&lt;/code&gt; 了：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\theta=(X^TX)^{-1}X^T\vec y$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;h1 id=&#34;概率学解释&#34;&gt;概率学解释&lt;/h1&gt;
+
+&lt;p&gt;上面我们直接给定了 &lt;code&gt;成本函数&lt;/code&gt; &lt;code&gt;$J$&lt;/code&gt; 的形式。那么为什么用上面给出的形式就是最好的衡量方式呢？我们先假设样本、误差和结果之间的关系如下：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$y^{(i)}=\theta^Tx^{(i)}+\epsilon^{(i)}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中 &lt;code&gt;$\epsilon^{(i)}$&lt;/code&gt; 代表模型给出的预测值与实际值的误差，不论是由没能抓住特征引起的，还是就是随机的噪声误差。我们再假设 &lt;code&gt;$\epsilon^{(i)}\sim\mathcal{N}(0,\sigma^2)$&lt;/code&gt;，概率符合高斯分布：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(\epsilon^{(i)})=\frac{1}{\sqrt{2\pi}\sigma}exp(-\frac{(\epsilon^{(i)})^2}{2\sigma^2})$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;这就说明：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$p(y^{(i)}|x^{(i)};\theta)=\frac{1}{\sqrt{2\pi}\sigma}exp(-\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2\sigma^2})$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;但是我们现在关心的是 &lt;code&gt;$\theta$&lt;/code&gt; 这个变量，因为求假设函数 &lt;code&gt;$h_\theta$&lt;/code&gt; 的过程其实就是求出 &lt;code&gt;$\theta$&lt;/code&gt; 的过程。我们希望可以构造一个函数使 &lt;code&gt;$\theta$&lt;/code&gt; 成为自变量，然后把它叫做 &lt;code&gt;似然函数&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$L(\theta)=L(\theta;X,\vec y)=p(\vec y|X; \theta)$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;由误差是独立的这一假设我们可以给出下面的式子：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+L(\theta) &amp;amp;=&amp;amp; \prod_{i=1}^mp(y^{(i)}|x^{(i)};\theta) \\
+&amp;amp;=&amp;amp; \prod_{i=1}^m\frac{1}{\sqrt{2\pi}\sigma}exp(-\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2\sigma^2})
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;由最大似然估计的原理我们知道应该找到使函数 &lt;code&gt;$L(\theta)$&lt;/code&gt; 的 &lt;code&gt;$\theta$&lt;/code&gt; 的值，为此我们需要对函数求导。为了简化求导的过程，我们使用 &lt;code&gt;对数似然函数&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\begin{eqnarray}
+\mathcal{l}(\theta) &amp;amp;=&amp;amp; \log L(\theta) \\
+&amp;amp;=&amp;amp; \log\prod_{i=1}^m\frac{1}{\sqrt{2\pi}\sigma}exp(\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2\sigma^2}) \\
+&amp;amp;=&amp;amp; \sum_{i=1}^m\log\frac{1}{\sqrt{2\pi}\sigma}exp(\frac{(y^{(i)}-\theta^Tx^{(i)})^2}{2\sigma^2}) \\
+&amp;amp;=&amp;amp; m\log\frac{1}{\sqrt{2\pi}\sigma}-\frac{1}{\sigma^2}\centerdot\frac{1}{2}\sum_{i=1}^{m}(y^{(i)}-\theta^Tx^{(i)})^2
+\end{eqnarray}$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;就可以观察得到我们求 &lt;code&gt;$\mathcal{l}(\theta)$&lt;/code&gt; 的最大值其实就是求下面式子的最小值：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$\frac{1}{2}\sum_{i=1}^m(y^{(i)}-\theta^Tx^{(i)})^2$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;也就是我们一开始提出的函数 &lt;code&gt;$J(\theta)$&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;h1 id=&#34;就近权重线性回归&#34;&gt;就近权重线性回归&lt;/h1&gt;
+
+&lt;p&gt;在上面提出的原始的线性回归算法中，如果要想对某个点 &lt;code&gt;$x$&lt;/code&gt; 作出预测，我们这么做：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;找到使 &lt;code&gt;$\sum_i(y^{(i)}-\theta^Tx^{(i)})^2$&lt;/code&gt; 取得最小值的 &lt;code&gt;$\theta$&lt;/code&gt; 。&lt;/li&gt;
+&lt;li&gt;输出 &lt;code&gt;$\theta^Tx$&lt;/code&gt; 。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;不同的是，就近权重线性回归算法这么做：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;找到使 &lt;code&gt;$\sum_iw^{(i)}(y^{(i)}-\theta^Tx^{(i)})^2$&lt;/code&gt; 取得最小值的 &lt;code&gt;$\theta$&lt;/code&gt; 。&lt;/li&gt;
+&lt;li&gt;输出 &lt;code&gt;$\theta^Tx$&lt;/code&gt; 。&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;这里的 &lt;code&gt;$w^{(i)}$&lt;/code&gt; 是一组非负数的 &lt;code&gt;权重&lt;/code&gt; 。如果对某 &lt;code&gt;$i$&lt;/code&gt; 而言 &lt;code&gt;$w^{(i)}$&lt;/code&gt; 的值很大，那么在计算 &lt;code&gt;$\theta$&lt;/code&gt; 的时候这一项占的成分就很大，反之则会对 &lt;code&gt;$\theta$&lt;/code&gt; 的影响就会很小。&lt;/p&gt;
+
+&lt;p&gt;一个比较标准的选择权重的函数是：&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;$$w^{(i)}=\exp(-\frac{(x^{(i)}-x)^2}{2\tau^2})$$&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;其中的 &lt;code&gt;$\tau$&lt;/code&gt; 控制了重要权重的范围，所以叫做 &lt;code&gt;带宽&lt;/code&gt; (bandwidth) 参数，通常通过实验得出。&lt;/p&gt;
+
+&lt;p&gt;就近权重线性回归是一种 &lt;code&gt;非参数算法&lt;/code&gt; ，而普通的线性回归是一种 &lt;code&gt;参数算法&lt;/code&gt; 。前者不存储 &lt;code&gt;$\theta$&lt;/code&gt; 的值，而是每次预测时都要计算，后者则是只计算一次就可以了。&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>回头看Promise</title>
+      <link>https://knightf.coding.me/post/promise-review/</link>
+      <pubDate>Thu, 13 Oct 2016 20:08:41 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/promise-review/</guid>
+      <description>
+
+&lt;p&gt;一个 Promise 对象，有三种状态：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;pending&lt;/code&gt;， 这是初始的状态&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;fulfilled&lt;/code&gt;，这是表示代码成功执行的状态&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;rejected&lt;/code&gt;，这是表示代码执行失败的状态&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;br&gt;&lt;/p&gt;
+
+&lt;p&gt;Promise 简化处理的无非就是这几种状态转换的过程。帮助保证状态只能从 &lt;code&gt;pending&lt;/code&gt; 到 &lt;code&gt;fulfilled&lt;/code&gt; 并不再改变，或者从 &lt;code&gt;pending&lt;/code&gt; 到 &lt;code&gt;rejected&lt;/code&gt; 并不再改变。可见它帮助我们构建了一个严谨完善的状态机，这也就是使用它便利的地方。&lt;/p&gt;
+
+&lt;h2 id=&#34;准备工作&#34;&gt;准备工作&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;var PENDING = 0,
+    FULFILLED = 1,
+    REJECTED = 2;
+
+function Promise(fn) {
+  var state = PENDING,
+      value = null;
+
+  function fulfill(val) {
+    state = FULFILLED;
+    value = val;
+  }
+
+  function reject(reason) {
+    state = REJECTED;
+    value = reason;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;基础的内容写好了。三种可能出现的状态作为常量先定义好。 &lt;code&gt;state&lt;/code&gt; 用来存放当前 Promise 对象的状态是什么，一开始当然是 &lt;code&gt;pending&lt;/code&gt; 。 &lt;code&gt;value&lt;/code&gt; 用来存放成功或者失败产生的结果，但现在初始时什么都没有所以是 &lt;code&gt;null&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;p&gt;然后我们新建了两个工具函数帮我们做状态的转换。 &lt;code&gt;fulfill&lt;/code&gt; 这个函数接受成功时返回的值，更改状态并且存起来。同理，&lt;code&gt;reject&lt;/code&gt; 函数接受失败的值并更改状态。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function doResolve(fn, onFulfill, onReject) {
+  var done = false;
+  try {
+    fn(function(val) {
+      if (done) return;
+      done = true;
+      onFulfill(val);
+    }, function(e) {
+      if (done) return;
+      done = true;
+      onReject(e);
+    });
+  } catch(e) {
+    if (done) return;
+    done = true;
+    onReject(e);
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;我们又新建了一个 &lt;code&gt;doResolve&lt;/code&gt; 工具函数。这个函数有三个形参。 &lt;code&gt;fn&lt;/code&gt; 是包含异步过程的函数， &lt;code&gt;onFulfill&lt;/code&gt; 是一个成功时执行的函数， &lt;code&gt;onReject&lt;/code&gt; 是一个失败时执行的函数。这个工具函数的逻辑就是整个 Promise 的核心思想的体现。&lt;/p&gt;
+
+&lt;p&gt;整个函数很简单。创建了一个布尔值 &lt;code&gt;done&lt;/code&gt; 用来表示异步过程有没有结束。用 try-catch 的结构包裹住 &lt;code&gt;fn&lt;/code&gt; 执行的过程。可以看到在每一个分支进行处理的代码中，都对 &lt;code&gt;done&lt;/code&gt; 做了判断，因为如果它已经结束了，我们根本就不用做任何事了。&lt;/p&gt;
+
+&lt;h2 id=&#34;按照基本法&#34;&gt;按照基本法&lt;/h2&gt;
+
+&lt;p&gt;新建 Promise 时，包含异步操作的函数是需要使用者提供的，所以在 &lt;code&gt;fn&lt;/code&gt; 中是可以 &lt;code&gt;resolve&lt;/code&gt; 任何东西的。但是显然我们不能接受 &lt;code&gt;resolve&lt;/code&gt; 另一个 Promise ，这是不符合规范的。当 &lt;code&gt;resolve&lt;/code&gt; 执行时，应该返回一个确定的值，而不是别的异步操作。想法也很直接，我们直接检查一下传递进来的值是不是一个 Promise 。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function getThen(val) {
+  var t = typeof val;
+  if (val &amp;amp;&amp;amp; (t == &#39;function&#39; || t == &#39;object&#39;)) {
+    var then = val.then;
+    if (typeof then == &#39;function&#39;) {
+      return then;
+    }
+  }
+  return null;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在函数 &lt;code&gt;getThen&lt;/code&gt; 中，我们检查了传进来的 &lt;code&gt;val&lt;/code&gt; 是不是有一个叫做 &lt;code&gt;then&lt;/code&gt; 的成员方法，如果有就返回这个方法，如果没有就返回空。&lt;/p&gt;
+
+&lt;p&gt;有了 &lt;code&gt;getThen&lt;/code&gt; 和 &lt;code&gt;doResolve&lt;/code&gt; 这两个方法，我们就可以写出一个包含完整的 resolve 流程的函数如下。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function Promise(fn) {
+  // ...
+
+  function resolve(result) {
+    try {
+      var then = getThen(result);
+      if (then) {
+        doResolve(then.bind(result), resolve, reject);
+      }
+      fulfill(result);
+    } catch(e) {
+      reject(e);
+    }
+  }
+
+  doResolve(fn, resolve, reject);
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在这个 &lt;code&gt;resolve&lt;/code&gt; 函数中，我们先检查了结果有没有 &lt;code&gt;then&lt;/code&gt; 方法。如果有，我们就调用一次 &lt;code&gt;doResolve&lt;/code&gt; 方法，让这个 &lt;code&gt;then&lt;/code&gt; 方法执行。然后我们 fulfill 这个 Promise 。当然，中间如果发生错误我们就 reject 掉这个 Promise 。&lt;/p&gt;
+
+&lt;h2 id=&#34;完成之后&#34;&gt;完成之后&lt;/h2&gt;
+
+&lt;p&gt;写到这里还不算完，还没有实现最关键的 &lt;code&gt;then&lt;/code&gt; 方法。之所以 Promise 可以用 &lt;code&gt;then&lt;/code&gt; 方法串起来，无非就是每一次都返回一个新的 Promise 来实现。而使用 &lt;code&gt;then&lt;/code&gt; 可以保证顺序，也是基于 &lt;code&gt;done&lt;/code&gt; 方法。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function Promise(fn) {
+  // ...
+  
+  var state = PENDING,
+      value = null,
+      handlers = [];
+
+  function fulfill(val) {
+    state = FULFILLED;
+    value = val;
+    handlers.forEach(handle);
+    handlers = null;
+  }
+
+  function reject(reason) {
+    state = REJECTED;
+    value = reason;
+    handlers.forEach(handle);
+    handlers = null;
+  }
+
+  function handle(handler) {
+    if (state == PENDING) {
+      handlers.push(handler);
+    } else {
+      if (state == FULFILLED &amp;amp;&amp;amp; typeof handler.onFulfilled == &#39;function&#39;) {      
+        handler.onFullfilled(value);
+      }
+      if (state == REJECTED &amp;amp;&amp;amp; typeof handler.onRejected == &#39;function&#39;) {
+        handler.onRejected(value);
+      }
+    }
+  }
+
+  this.done = function(onFulfilled, onRejected) {
+    setTimeout(function() {
+      handle({
+        onFulfilled: onFulfilled,
+        onRejected: onRejected,
+      });
+    }, 0);
+  }
+
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;之所以能够保证使用 &lt;code&gt;done&lt;/code&gt; 方法时，里面的代码是异步操作结束后执行，用的就是广播的机制。新建了一个 &lt;code&gt;handlers&lt;/code&gt; 数组，用来存放所有通过 &lt;code&gt;done&lt;/code&gt; 方法注册的 handler 。在 &lt;code&gt;fulfill&lt;/code&gt; 和 &lt;code&gt;reject&lt;/code&gt; 方法中，也做了对应的修改，使其调用这些 handler 。工具函数 &lt;code&gt;handle&lt;/code&gt; 可以根据 Promise 的状态来注册 handler 或者调用它们。 &lt;code&gt;done&lt;/code&gt; 方法则极端简单，用 &lt;code&gt;setTimeout&lt;/code&gt; 把 handler 的注册放在时间片队列的末尾，保证异步。&lt;/p&gt;
+
+&lt;h2 id=&#34;一篑之功&#34;&gt;一篑之功&lt;/h2&gt;
+
+&lt;p&gt;有了 &lt;code&gt;done&lt;/code&gt; 这个关键的方法， &lt;code&gt;then&lt;/code&gt; 方法也就不那么难写了。我们只要让 &lt;code&gt;then&lt;/code&gt; 方法接收两个函数分别对应成功与失败两个状态，并且返回一个新的 Promise 。而在这个 Promise 中，我们只要把这两个函数分别对应绑定到老的 Promise 的 &lt;code&gt;done&lt;/code&gt; 方法里就行了。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;function Promise(fn) {
+  // ...
+
+  this.then = function(onFulfilled, onRejected) {
+    var self = this;  // cache this;
+    return new Promise(function(resolve, reject) {
+      return self.done(function(result){
+        if (typeof onFulfilled == &#39;function&#39;) {
+          try {
+            return resolve(onFulfilled(result));
+          } catch(e) {
+            return reject(e);
+          }
+        } else {
+          return resolve(result);
+        }
+      }, function(ex) {
+        if (typeof onRejected == &#39;function&#39;) {
+          try {
+            return resolve(onRejected(result));
+          } catch(e) {
+            return reject(e);
+          }
+        } else {
+          return reject(ex);
+        }
+      });
+    });
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;就像之前描述的一样，我们构造了一个 Promise ，让它接收 &lt;code&gt;onFulfilled&lt;/code&gt; 和 &lt;code&gt;onRejected&lt;/code&gt; 函数处理过的结果来 resolve 或者 reject 。&lt;/p&gt;
+
+&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;code&gt;doResolve&lt;/code&gt; 是异步操作运行的核心。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;done&lt;/code&gt; 的实现是广播。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;then&lt;/code&gt; 构建了指定形式的新 Promise 来完成链式结构。&lt;/li&gt;
+&lt;/ol&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Karma入门－JavaScript单元测试</title>
+      <link>https://knightf.coding.me/post/karma-tutorial/</link>
+      <pubDate>Fri, 29 Jul 2016 11:26:01 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/karma-tutorial/</guid>
+      <description>
+
+&lt;p&gt;&lt;a href=&#34;http://www.bradoncode.com/blog/2015/02/27/karma-tutorial/&#34;&gt;阅读原文&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;什么是-karma&#34;&gt;什么是 Karma ?&lt;/h2&gt;
+
+&lt;p&gt;Karma 是一个可以通过命令行在真正的浏览器上运行源代码的工具。它之所以强大，是因为它可以在真的浏览器中运行代码，而不是在虚拟的 DOM 中运行。DOM 在不同浏览器上的实现都不一样，所以能用真的浏览器可以保证测试是有效的。&lt;/p&gt;
+
+&lt;p&gt;你可以从&lt;a href=&#34;http://karma-runner.github.io/0.12/index.html&#34;&gt; Karma 官网&lt;/a&gt;上找到更多的细节和文档。我发现安装完成之后还是需要有基础知识才能使用的。我曾经从头到位地使用过所以在这里总结一下。&lt;/p&gt;
+
+&lt;p&gt;这篇文章记述了安装过程，介绍了怎么配置初始化和我给出的一些自定义安装内容。在 Github 上有这个 &lt;a href=&#34;https://github.com/bbraithwaite/karma-seed&#34;&gt;karma-seed&lt;/a&gt; 项目。&lt;/p&gt;
+
+&lt;h2 id=&#34;安装&#34;&gt;安装&lt;/h2&gt;
+
+&lt;p&gt;需要安装 &lt;a href=&#34;http://nodejs.org/&#34;&gt;Node.js&lt;/a&gt; ，因为 Karma 在上面运行。&lt;/p&gt;
+
+&lt;p&gt;想要更细致地安装 Karma ，可以看这个&lt;a href=&#34;http://karma-runner.github.io/0.12/intro/installation.html&#34;&gt;官方的文档&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;不想费劲的话，可以下直接下载 &lt;code&gt;package.json&lt;/code&gt; 。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;curl -O https://gist.githubusercontent.com/bbraithwaite/7432f64ea45e028eb23c/raw/2a6e23cee09e7737c30cc790393a9b273070fbcb/package.json
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;或者直接把下面的内容粘贴进 &lt;code&gt;package.json&lt;/code&gt; 里面：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+  &amp;quot;name&amp;quot;: &amp;quot;karma-seed&amp;quot;,
+  &amp;quot;version&amp;quot;: &amp;quot;1.0.0&amp;quot;,
+  &amp;quot;description&amp;quot;: &amp;quot;&amp;quot;,
+  &amp;quot;scripts&amp;quot;: {
+    &amp;quot;test&amp;quot;: &amp;quot;./node_modules/karma/bin/karma start karma.conf.js&amp;quot;
+  },
+  &amp;quot;devDependencies&amp;quot;: {
+    &amp;quot;jasmine-core&amp;quot;: &amp;quot;^2.2.0&amp;quot;,
+    &amp;quot;karma&amp;quot;: &amp;quot;^0.12.31&amp;quot;,
+    &amp;quot;karma-chrome-launcher&amp;quot;: &amp;quot;^0.1.7&amp;quot;,
+    &amp;quot;karma-jasmine&amp;quot;: &amp;quot;^0.3.5&amp;quot;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;然后执行：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;完成之后，输入下面的命令检查一下结果：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;./node_modules/karma/bin/karma start
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果都没问题的话，控制台应该输出下面这样的东西：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;INFO [karma]: Karma v0.12.31 server started at http://localhost:9876/
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;配置&#34;&gt;配置&lt;/h2&gt;
+
+&lt;p&gt;接下来需要给 Karma 添加一些配置。为了规范化这个过程，运行下面的命令并且一直接受默认值：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;./node_modules/karma/bin/karma init
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在项目根目录会创建一个叫 &lt;code&gt;karma.conf.js&lt;/code&gt; 的文件。如果你想要了解这些属性，可以看一下&lt;a href=&#34;http://karma-runner.github.io/0.12/config/configuration-file.html&#34;&gt;配置文档&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;想要让测试可以通过 &lt;code&gt;npm test&lt;/code&gt; 这样的命令执行，需要改一下 &lt;code&gt;package.json&lt;/code&gt; 文件。把 &lt;code&gt;package.json&lt;/code&gt; 里面的：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;scripts&amp;quot;: {
+  &amp;quot;test&amp;quot;: &amp;quot;echo \&amp;quot;Error: no test specified\&amp;quot; &amp;amp;&amp;amp; exit 1&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;换成：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;scripts&amp;quot;: {
+  &amp;quot;test&amp;quot;: &amp;quot;./node_modules/karma/bin/karma start karma.conf.js&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;使用 &lt;code&gt;npm test&lt;/code&gt; 来作为测试的入口是我个人的偏好。这样不管我用什么样的工具做测试，我都可以用同样的命令执行。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Karma 文档里提到还可以安装 &lt;code&gt;karma-cli&lt;/code&gt; 来省去 &lt;code&gt;./node_modules/karma/bin/karma start&lt;/code&gt; 这样的麻烦。如果你想装的话：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install -g karma-cli
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果 &lt;code&gt;karma-cli&lt;/code&gt; 装好了，那么 &lt;code&gt;package.json&lt;/code&gt; 里面的内容就要更新一下：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;scripts&amp;quot;: {
+  &amp;quot;test&amp;quot;: &amp;quot;karma start karma.conf.js&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;添加测试&#34;&gt;添加测试&lt;/h2&gt;
+
+&lt;p&gt;我看到的大多数例子都是默认在用 AngularJS 。考虑到我们是纯净安装所以就不用这些框架出场了。作为一个简单的例子我们要测试一个应用，它在单击按钮的时候把两个数加起来并显示出来。HTML 是这样的：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;&amp;lt;html&amp;gt;
+  &amp;lt;head&amp;gt;
+    &amp;lt;title&amp;gt;Magic Calculator&amp;lt;/title&amp;gt;
+  &amp;lt;/head&amp;gt;
+  &amp;lt;body&amp;gt;
+    &amp;lt;input id=&amp;quot;x&amp;quot; type=&amp;quot;text&amp;quot;&amp;gt;
+    &amp;lt;input id=&amp;quot;y&amp;quot; type=&amp;quot;text&amp;quot;&amp;gt;
+    &amp;lt;input id=&amp;quot;add&amp;quot; type=&amp;quot;button&amp;quot; value=&amp;quot;Add Numbers&amp;quot;&amp;gt;
+    Result: &amp;lt;span id=&amp;quot;result&amp;quot; /&amp;gt;
+    &amp;lt;script type=&amp;quot;text/javascript&amp;quot; src=&amp;quot;lib/calculator.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;
+    &amp;lt;script&amp;gt;
+      calculator.init();
+    &amp;lt;/script&amp;gt;
+  &amp;lt;/body&amp;gt;
+&amp;lt;/html&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;创建两个新文件：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;lib/calculator.js&lt;/li&gt;
+&lt;li&gt;test/calculator.test.js&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;然后先把这些粘贴进 &lt;code&gt;test/calculator.test.js&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;describe(&#39;Calculator&#39;, function() {
+
+  it(&#39;should add numbers&#39;);
+
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在执行 &lt;code&gt;npm test&lt;/code&gt; 的话是不会检测到这个新的测试的。我们需要修改配置文件让 Karma 知道这些新的文件的存在。更新 &lt;code&gt;karma.conf.js&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  // list of files / patterns to load in the browser
+  files: [
+    &#39;lib/*.js&#39;,
+    &#39;test/*.js&#39;
+  ],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在再执行 &lt;code&gt;npm test&lt;/code&gt; 的话控制台就会输出类似下面的东西了：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;INFO [karma]: Karma v0.12.31 server started at http://localhost:9876/
+INFO [launcher]: Starting browser Chrome
+INFO [Chrome 40.0.2214 (Mac OS X 10.10.2)]: Connected on socket bDMxeU51miCD4wNe3 with id 34236680
+Chrome 40.0.2214 (Mac OS X 10.10.2): Executed 0 of 1 (skipped 1) ERROR (0.004 secs / 0 secs)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;使用 Chrome 这样的浏览器执行测试还有一个好处就是访问输出的 URL 的时候，浏览器自带了调试的功能。下面我们就给测试文件添加一些有意义的内容：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;/*
+ * Unit tests for lib/calculator.js
+ */
+
+describe(&#39;Calculator&#39;, function() {
+
+  // inject the HTML fixture for the tests
+  beforeEach(function() {
+    var fixture = &#39;&amp;lt;div id=&amp;quot;fixture&amp;quot;&amp;gt;&amp;lt;input id=&amp;quot;x&amp;quot; type=&amp;quot;text&amp;quot;&amp;gt;&#39; + 
+      &#39;&amp;lt;input id=&amp;quot;y&amp;quot; type=&amp;quot;text&amp;quot;&amp;gt;&#39; + 
+      &#39;&amp;lt;input id=&amp;quot;add&amp;quot; type=&amp;quot;button&amp;quot; value=&amp;quot;Add Numbers&amp;quot;&amp;gt;&#39; +
+      &#39;Result: &amp;lt;span id=&amp;quot;result&amp;quot; /&amp;gt;&amp;lt;/div&amp;gt;&#39;;
+
+    document.body.insertAdjacentHTML(
+      &#39;afterbegin&#39;, 
+      fixture);
+  });
+
+  // remove the html fixture from the DOM
+  afterEach(function() {
+    document.body.removeChild(document.getElementById(&#39;fixture&#39;));
+  });
+
+  // call the init function of calculator to register DOM elements
+  beforeEach(function() {
+    window.calculator.init();
+  });
+
+  it(&#39;should return 3 for 1 + 2&#39;, function() {
+    document.getElementById(&#39;x&#39;).value = 1;
+    document.getElementById(&#39;y&#39;).value = 2;
+    document.getElementById(&#39;add&#39;).click();
+    expect(document.getElementById(&#39;result&#39;).innerHTML).toBe(&#39;3&#39;);
+  });
+
+  it(&#39;should calculate zero for invalid x value&#39;, function() {
+    document.getElementById(&#39;x&#39;).value = &#39;hello&#39;;
+    document.getElementById(&#39;y&#39;).value = 2;
+    document.getElementById(&#39;add&#39;).click();
+    expect(document.getElementById(&#39;result&#39;).innerHTML).toBe(&#39;0&#39;);
+  });
+
+  it(&#39;should calculate zero for invalid y value&#39;, function() {
+    document.getElementById(&#39;x&#39;).value = 1;
+    document.getElementById(&#39;y&#39;).value = &#39;goodbye&#39;;
+    document.getElementById(&#39;add&#39;).click();
+    expect(document.getElementById(&#39;result&#39;).innerHTML).toBe(&#39;0&#39;);
+  });
+
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这个文件里的重点：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;测试文件用到的 HTML 是在浏览器里注入的。&lt;/li&gt;
+&lt;li&gt;DOM 元素可以通过和浏览器一样的方式访问到。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;接下来加上基础的计算逻辑，把下面的内容粘贴进 &lt;code&gt;lib/calculator.js&lt;/code&gt; 里面：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;window.calculator = window.calculator || {};
+
+(function() {
+  var calculate = function() {
+    var x = document.getElementById(&#39;x&#39;).value;
+    var y = document.getElementById(&#39;y&#39;).value;
+    document.getElementById(&#39;result&#39;).innerHTML = x + y;
+  };
+
+  window.calculator.init = function() {
+    document.getElementById(&#39;add&#39;).addEventListener(&#39;click&#39;, calculate);
+  };
+})();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;我在里面留了一些 bug 好让测试失败。现在运行 &lt;code&gt;npm test&lt;/code&gt; 就会出现测试未通过的信息。Karma 具有监听的功能，如果这些文件被改动后不需要再次运行 &lt;code&gt;npm test&lt;/code&gt; ，它会自动重启测试。&lt;/p&gt;
+
+&lt;p&gt;那现在把 bug 去掉，&lt;code&gt;calculator.js&lt;/code&gt; 应该长这样：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;&#39;use strict&#39;;
+
+window.calculator = window.calculator || {};
+
+(function() {
+  var getIntById = function(id) {
+    return parseInt(document.getElementById(id).value, 10);
+  };
+
+  var calculate = function() {
+    var sum = getIntById(&#39;x&#39;) + getIntById(&#39;y&#39;);
+    document.getElementById(&#39;result&#39;).innerHTML = isNaN(sum) ? 0 : sum;
+  };
+
+  window.calculator.init = function() {
+    document.getElementById(&#39;add&#39;).addEventListener(&#39;click&#39;, calculate);
+  };
+})();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在测试就应该通过了：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;INFO [karma]: Karma v0.12.31 server started at http://localhost:9876/
+INFO [launcher]: Starting browser PhantomJS
+INFO [PhantomJS 1.9.8 (Mac OS X)]: Connected on socket WE5_e1Pp_f3CI1Zmm4tw with id 82088536
+PhantomJS 1.9.8 (Mac OS X): Executed 3 of 3 SUCCESS (0.016 secs / 0.001 secs)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;可选配置&#34;&gt;可选配置&lt;/h2&gt;
+
+&lt;p&gt;以前我做的项目里曾经做过这些配置：&lt;/p&gt;
+
+&lt;h3 id=&#34;使用-mocha-和-should&#34;&gt;使用 Mocha 和 Should&lt;/h3&gt;
+
+&lt;p&gt;如果你之前写过 Node.js 的单元测试你很可能会用到 Mocha。我偏好用 Mocha 和 Should 风格的断言。刚才默认的安装我们用了 Jasmine，但是如果你想用 Mocha 的话改起来非常容易。&lt;/p&gt;
+
+&lt;p&gt;安装，并且把 Jasmine 从 &lt;code&gt;package.json&lt;/code&gt; 里面删掉：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install karma-mocha --save-dev
+npm install karma-chai --save-dev
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;更新 &lt;code&gt;karma.conf.js&lt;/code&gt; ：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  frameworks: [&#39;mocha&#39;, &#39;chai&#39;],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;现在我们就能用这种格式写断言了：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;1.should.equal(2);
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;使用无头浏览器&#34;&gt;使用无头浏览器&lt;/h3&gt;
+
+&lt;p&gt;如果测试多了，再用多种浏览器测试会变的很慢。我有的时候并不需要把代码在每种浏览器里都测一遍，所以为了速度我会用无头浏览器 &lt;a href=&#34;http://www.bradoncode.com/blog/2015/02/27/karma-tutorial/phantomjs.org&#34;&gt;PhantomJS&lt;/a&gt;。然后等到最后代码成型的时候再在每种浏览器里测试。&lt;/p&gt;
+
+&lt;p&gt;安装 PhantomJS 的话：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install karma-phantomjs-launcher --save-dev
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;那么在 &lt;code&gt;karma.conf.js&lt;/code&gt; 里面就要这样改：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  browsers: [&#39;PhantomJS&#39;],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;设置测试覆盖范围&#34;&gt;设置测试覆盖范围&lt;/h3&gt;
+
+&lt;p&gt;有时我会需要测试覆盖范围的报告。这可以用 &lt;a href=&#34;http://gotwarlost.github.io/istanbul/&#34;&gt;Istanbul&lt;/a&gt; 来实现。&lt;/p&gt;
+
+&lt;p&gt;启用覆盖范围报告，安装：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;npm install karma-coverage --save-dev
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;在 &lt;code&gt;karma.conf.js&lt;/code&gt; 里面，设置这些属性：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  preprocessors: {
+    &#39;lib/*.js&#39;: &#39;coverage&#39;
+  },
+  reporters: [&#39;progress&#39;, &#39;coverage&#39;],
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;当运行测试的时候，会创建一个新的 &lt;code&gt;coverage&lt;/code&gt; 文件夹。打开里面的 &lt;code&gt;index.html&lt;/code&gt; 就可以看到报告。&lt;/p&gt;
+
+&lt;h3 id=&#34;设置测试配置文件&#34;&gt;设置测试配置文件&lt;/h3&gt;
+
+&lt;p&gt;我工作时总是希望能够简单的在不同的测试目标中切换。当做小的改动的时候我希望用 PhantomJS 快速的测试而且不需要覆盖范围之类的东西。但当我完成一个功能的时候希望能够全面的测试。&lt;/p&gt;
+
+&lt;p&gt;我通过设置环境变量实现这样的切换，在 &lt;code&gt;package.json&lt;/code&gt; 中：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;&amp;quot;scripts&amp;quot;: {
+  &amp;quot;test&amp;quot;: &amp;quot;karma start karma.conf.js&amp;quot;,
+  &amp;quot;full-test&amp;quot;: &amp;quot;NODE_ENV=test karma start karma.conf.js&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果我执行 &lt;code&gt;npm run full-test&lt;/code&gt; 就是全面的跨浏览器测试，包括覆盖范围报告。&lt;/p&gt;
+
+&lt;h3 id=&#34;处理-html-片段&#34;&gt;处理 HTML 片段&lt;/h3&gt;
+
+&lt;p&gt;在上面的内容里 HTML 代码是通过 JavaScript 注入进去的。当测试变多的时候，插入这些代码就变得累人了。有很多插件可以解决这个问题，我用的是 &lt;a href=&#34;https://github.com/billtrik/karma-fixture&#34;&gt;karma-fixture&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;把 HTML 片段存进文件里然后在测试里就可以这样引用：&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt; beforeEach(function() {
+    fixture.load(&#39;calculator.fixture.html&#39;);
+ });
+ ~~~
+
+See an [example test here](https://github.com/bbraithwaite/karma-seed/blob/master/test/calculator.test.js).
+
+### Keep DOM accessor code out of Tests
+
+This is a personal preference concerning style. The test example given previously had code to find elements in the test method e.g. _document.getElementById_. This additional detail can muddy the tests making them less readable.
+
+~~~javascript
+it(&#39;should return 3 for 1 + 2&#39;, function() {
+  document.getElementById(&#39;x&#39;).value = 1;
+  document.getElementById(&#39;y&#39;).value = 2;
+  document.getElementById(&#39;add&#39;).click();
+  expect(document.getElementById(&#39;result&#39;).innerHTML).toBe(&#39;3&#39;);
+});
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;seed-项目&#34;&gt;Seed 项目&lt;/h2&gt;
+
+&lt;p&gt;包含上面所有内容的项目在这里：&lt;a href=&#34;https://github.com/bbraithwaite/karma-seed&#34;&gt;https://github.com/bbraithwaite/karma-seed&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

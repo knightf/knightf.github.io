@@ -1,0 +1,1029 @@
+    <!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="韩飞">
+    
+    <meta name="generator" content="Hugo 0.18.1" />
+    <title>通过构建一个微型服务学习Docker &middot; 韩飞的博客</title>
+    <link rel="shortcut icon" href="https://knightf.coding.me/images/favicon.ico">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/style.css">
+    <link rel="stylesheet" href="https://knightf.coding.me/css/highlight.css">
+    
+
+    
+    <link rel="stylesheet" href="https://knightf.coding.me/css/monosocialiconsfont.css">
+    
+
+    
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [['$','$'], ['\\(','\\)']],
+          displayMath: [['$$','$$'], ['\[','\]']],
+          processEscapes: true,
+          processEnvironments: true,
+          skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+          TeX: { equationNumbers: { autoNumber: "AMS" },
+               extensions: ["AMSmath.js", "AMSsymbols.js"] }
+        }
+      });
+    </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Queue(function() {
+          
+          
+          
+          var all = MathJax.Hub.getAllJax(), i;
+          for(i = 0; i < all.length; i += 1) {
+              all[i].SourceElement().parentNode.className += ' has-jax';
+          }
+      });
+    </script>
+  </head>
+
+    <body>
+       <nav class="main-nav">
+	
+	
+		<a href='https://knightf.coding.me/'> <span class="arrow">←</span>Home</a>
+	
+
+	
+		
+	
+
+	
+</nav>
+
+        <section id="wrapper">
+            <article class="post">
+                <header>
+                    <h1>通过构建一个微型服务学习Docker</h1>
+                    <h2 class="headline">
+                    June 6, 2016 
+                    <br>
+                    
+                    
+                        
+                            <a href="https://knightf.coding.me/tags/docker">Docker</a>
+                        
+                            <a href="https://knightf.coding.me/tags/%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83">开发环境</a>
+                        
+                    
+                    
+                    </h2>
+                </header>
+                <section id="post-body">
+                    
+
+<p><a href="http://www.dwmkerr.com/learn-docker-by-building-a-microservice/">阅读原文</a></p>
+
+<p>如果你想要染指Docker，那看这篇就好了！</p>
+
+<p>在这篇文章中我会向你展示Docker是怎么工作的，它究竟是什么，还有它是怎么帮助我们完成构建一个微型服务这种基础开发任务的。</p>
+
+<p>在例子里我们将会用Node.js服务搭配MySQL后台的配置，从运行本地代码到生成运行服务和数据库的容器。</p>
+
+<p><img src="/images/learn-docker-by-building-a-microservice-pic1.png" alt="示意图" /></p>
+
+<h2 id="什么是docker">什么是Docker?</h2>
+
+<p>本质上来说，Docker是一个让你可以创建映像(和虚拟机的很相似)并且在一个容器里运行这个映像的示例。</p>
+
+<p>Dock维护着一个很大的映像库叫<a href="https://hub.docker.com/">Docker Hub</a>。你可以从里面找你想用的映像或者存储你自己的映像。你可以装好Dock，选一个想用的映像然后在一个容器里运行它的实例。</p>
+
+<p>我们接下来就要先构建映像，然后根据映像创建容器，和更多精彩内容。</p>
+
+<h3 id="安装docker">安装Docker</h3>
+
+<p>要跟着做，你得装Docker。</p>
+
+<p>查看对应你系统的安装指南：<a href="http://docs.docker.com/engine/installation">http://docs.docker.com/engine/installation</a>.</p>
+
+<p>如果你是用的苹果机或者PC，那就用虚拟机。我在OS X系统下面用Parallels运行Ubuntu虚拟机应对大多数的开发任务。这样可以拍快照，回滚到出错之前的版本等等，在踩坑的时候非常有用。</p>
+
+<h3 id="试一试">试一试</h3>
+
+<p>键入这个命令：</p>
+
+<pre><code>docker run -it ubuntu
+</code></pre>
+
+<p>等菊花转一会儿之后，你就能看见类似这样的提示：</p>
+
+<pre><code>root@719059da250d:/#
+</code></pre>
+
+<p>再试试别的命令然后退出这个容器：</p>
+
+<pre><code>root@719059da250d:/# lsb_release -a
+No LSB modules are available.  
+Distributor ID:    Ubuntu  
+Description:    Ubuntu 14.04.4 LTS  
+Release:    14.04  
+Codename:    trusty
+root@719059da250d:/# exit
+</code></pre>
+
+<p>看上去没什么了不起，但发生了很多事！</p>
+
+<p>你看到的是在你机器上_独立的_运行着Ubuntu的一个容器的脚本shell。这个容器是你发送指令的地方：你可以在上面装东西，运行软件，干想干的任何事。</p>
+
+<p>这是个从Docker文档<a href="https://docs.docker.com/v1.8/introduction/understanding-docker/">理解架构</a>里面摘出来的一个很棒的示意图：</p>
+
+<p><img src="/images/learn-docker-by-building-a-microservice-pic2.png" alt="示意图" /></p>
+
+<ol>
+<li>我们敲了一个命令</li>
+<li><code>docker</code>: 运行Docker客户端</li>
+<li><code>run</code>: 运行新容器的命令</li>
+<li><code>-it</code>: 让容器给出一个交互终端的参数</li>
+<li><code>ubuntu</code>: 容器使用的映像</li>
+<li>宿主机器(就是我们自己的电脑)上运行的Docker服务检查我们本地有没有映像的拷贝，然后发现并没有。</li>
+<li>Docker服务开始检查公共注册表(Docker hub)里有没有叫<code>ubuntu</code>的这个映像，结果是有的。</li>
+<li>Docker服务开始下载这个映像然后存在本地的缓存区里(为了下次使用)。</li>
+<li>Docker服务基于这个<code>ubuntu</code>映像创建了一个新的容器。</li>
+</ol>
+
+<p>试试下面这些命令：</p>
+
+<pre><code>docker run -it haskell
+docker run -it java
+docker run -it python
+</code></pre>
+
+<p>我们今天用不上<strong>Haskell</strong>，但是你可以发现要运行任何环境都是很简单的。</p>
+
+<p>构建你自己的映像花不了多长时间，而且里面运行着我们的应用，服务和数据库，所有我们用的东西。然后我们就可以在任何装了Docker的计算机上运行它，并且是以一种一致的，可预测的方式运行。边写代码，我们可以一边构建我们的软件和它运行所依赖的环境并且简单的部署它们。</p>
+
+<p>我们来看看这个简单的微型服务的例子。</p>
+
+<h2 id="简介">简介</h2>
+
+<p>我们要搭建一个用到Node.js和MySQL的微型服务，在这个服务里我们可以管理一个包含邮件地址和电话号码的目录。</p>
+
+<h2 id="开始">开始</h2>
+
+<p>为了本地开发我们需要安装MySQL并且建立一个测试数据库以便……</p>
+
+<p>……不。</p>
+
+<p>创建一个本地的数据库并且在上面跑脚本起初很简单，但是可能会变得很混乱。有很多不可控的因素。这么做也许能行，我们甚至可以在repo里面添加起控制作用的shell脚本，但如果其它开发者已经装了MySQL呢？如果他们已经有了一个叫做&rsquo;users&rsquo;的数据库正是我们要创建的呢？</p>
+
+<h2 id="第一步-在docker中创建一个测试数据库服务器">第一步：在Docker中创建一个测试数据库服务器</h2>
+
+<p>这是一个绝佳的Docker使用场景。也许在生产环境下我们并不想在Docker里面运行数据库(比如我们可能会用Amazon RDS)，但是不用花很长时间，我们就可以为开发而创建一个Docker容器，里面是一个干净的MySQL数据库。这样我们的开发环境就是纯净的，而且我们做的操作都是可控的，可重现的。</p>
+
+<p>执行下面的语句：</p>
+
+<pre><code>docker run --name db -e MYSQL_ROOT_PASSWORD=123 -p 3306:3306 mysql:latest  
+</code></pre>
+
+<p>这会运行一个MySQL实例，允许3306端口的访问，root密码是123。</p>
+
+<ol>
+<li><code>docker run</code>告诉Docker我们想要运行一个映像，名字是最后的那个参数，<strong>mysql:vlatest</strong>。</li>
+<li><code>--name db</code>将这个容器命名为<code>db</code>。</li>
+<li><code>-d</code>分离，就是让这个实例在后台运行。</li>
+<li><code>-e MYSQL_ROOT_PASSWORD=123</code>这里面的<code>-e</code>是标示出我们想要给定环境变量。后面跟着的变量就是这个MySQL映像会检查并设置的默认root密码。</li>
+<li><code>-p 3306:3306</code>告诉Docker我们要把容器内部的3306端口映射到外部的3306端口。</li>
+</ol>
+
+<p>最后的部分非常关键，尽管3306是MySQL的默认端口，但我们不告诉Docker我们要映射的话，它是会阻断我们通过那个端口通信的(因为容器如果你不指定的访问方式的话是独立的)。</p>
+
+<p>这个语句返回的是_容器id_，一个让你可以停止、重启、输入命令、干各种事情的引用名。我们来看看都有哪些容器在运行：</p>
+
+<pre><code>$ docker ps
+CONTAINER ID  IMAGE            ...    NAMES
+36e68b966fd0  mysql:latest     ...    db
+</code></pre>
+
+<p>真正有用的是容器ID，映像和名字。我们来连接到这个映像看看都有些什么：</p>
+
+<pre><code>$ docker exec -it db /bin/bash
+
+root@36e68b966fd0:/# mysql -uroot -p123  
+mysql&gt; show databases;  
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
++--------------------+
+1 rows in set (0.01 sec)
+
+mysql&gt; exit  
+Bye  
+root@36e68b966fd0:/# exit  
+</code></pre>
+
+<p>这么做聪明在哪呢：</p>
+
+<ol>
+<li><code>docker exec -it db</code>告诉Docker我们想要在名字叫做<code>db</code>的容器上执行一个命令(我们可以用id，或者id开头的几个字符)。<code>-it</code>确保我们可以用终端。</li>
+<li><code>mysql -uroot -p123</code>这条命令就是我们在容器里执行的命令，打开一个mysql客户端。</li>
+</ol>
+
+<p>我们可以创建数据库，表，用户和我们需要的一切。</p>
+
+<h3 id="完成测试数据库">完成测试数据库</h3>
+
+<p>在一个容器里运行MySQL已经给我们展示了一些Docker的技巧，但是我们在这里先把注意力转移到完成我们的服务上。现在我们创建一个<code>test-database</code>文件夹，里面放上开始、关闭数据库和设置测试数据的脚本：</p>
+
+<pre><code>test-database\setup.sql
+test-database\start.sh
+test-database\stop.sh
+</code></pre>
+
+<p>开始很简单：</p>
+
+<pre><code class="language-bash">#!/bin/sh
+
+# Run the MySQL container, with a database named 'users' and credentials
+# for a users-service user which can access it.
+echo &quot;Starting DB...&quot;  
+docker run --name db -d \  
+  -e MYSQL_ROOT_PASSWORD=123 \
+  -e MYSQL_DATABASE=users -e MYSQL_USER=users_service -e MYSQL_PASSWORD=123 \
+  -p 3306:3306 \
+  mysql:latest
+
+# Wait for the database service to start up.
+echo &quot;Waiting for DB to start up...&quot;  
+docker exec db mysqladmin --silent --wait=30 -uusers_service -p123 ping || exit 1
+
+# Run the setup script.
+echo &quot;Setting up initial data...&quot;  
+docker exec -i db mysql -uusers_service -p123 users &lt; setup.sql  
+</code></pre>
+
+<p>这个脚本在后台运行一个数据库映像，设置了一个可以访问<code>users</code>数据库的用户，然后等数据库运行起来之后运行<code>setup.sql</code>脚本设置初始的数据。</p>
+
+<p><code>setup.sql</code>里面：</p>
+
+<pre><code class="language-sql">create table directory (user_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, email TEXT, phone_number TEXT);  
+insert into directory (email, phone_number) values ('homer@thesimpsons.com', '+1 888 123 1111');  
+insert into directory (email, phone_number) values ('marge@thesimpsons.com', '+1 888 123 1112');  
+insert into directory (email, phone_number) values ('maggie@thesimpsons.com', '+1 888 123 1113');  
+insert into directory (email, phone_number) values ('lisa@thesimpsons.com', '+1 888 123 1114');  
+insert into directory (email, phone_number) values ('bart@thesimpsons.com', '+1 888 123 1115');  
+</code></pre>
+
+<p><code>stop.sh</code>脚本会停止这个容器然后移除它(Docker默认会保留容器来为之后的启动加速，然而这个例子里面我们不用这个功能)：</p>
+
+<pre><code class="language-bash">#!/bin/sh
+
+# Stop the db and remove the container.
+docker stop db &amp;&amp; docker rm db  
+</code></pre>
+
+<p>我们之后会把这些代码写的更聪明、更简洁。到这一步为止的代码在repo的<a href="https://github.com/dwmkerr/node-docker-mircroservice/tree/step1">step1</a>分支上。</p>
+
+<h2 id="第二步-用node-js创建一个微型服务">第二步：用Node.js创建一个微型服务</h2>
+
+<p>这篇文章主要是将Docker的，所以我不会花很长时间说怎么在Node.js里写代码。我只会说说重点。</p>
+
+<pre><code>test-database/          # contains the code seen in Step 1  
+users-service/          # root of our node.js microservice  
+- package.json          # dependencies, metadata
+- index.js              # main entrypoint of the app
+- api/                  # our apis and api tests
+- config/               # config for the app
+- repository/           # abstraction over our db
+- server/               # server setup code
+</code></pre>
+
+<p>我们来一点一点看。要看的第一点是<code>repository</code>。把访问数据库的过程抽象出来很有用，测试的时候也更便于模拟：</p>
+
+<pre><code class="language-javascript">//  repository.js
+//
+//  Exposes a single function - 'connect', which returns
+//  a connected repository. Call 'disconnect' on this object when you're done.
+'use strict';
+
+var mysql = require('mysql');
+
+//  Class which holds an open connection to a repository
+//  and exposes some simple functions for accessing data.
+class Repository {  
+  constructor(connection) {
+    this.connection = connection;
+  }
+
+  getUsers() {
+    return new Promise((resolve, reject) =&gt; {
+
+      this.connection.query('SELECT email, phone_number FROM directory', (err, results) =&gt; {
+        if(err) {
+          return reject(new Error(&quot;An error occured getting the users: &quot; + err));
+        }
+
+        resolve((results || []).map((user) =&gt; {
+          return {
+            email: user.email,
+            phone_number: user.phone_number
+          };
+        }));
+      });
+
+    });
+  }
+
+  getUserByEmail(email) {
+
+    return new Promise((resolve, reject) =&gt; {
+
+      //  Fetch the customer.
+      this.connection.query('SELECT email, phone_number FROM directory WHERE email = ?', [email], (err, results) =&gt; {
+
+        if(err) {
+          return reject(new Error(&quot;An error occured getting the user: &quot; + err));
+        }
+
+        if(results.length === 0) {
+          resolve(undefined);
+        } else {
+          resolve({
+            email: results[0].email,
+            phone_number: results[0].phone_number
+          });
+        }
+
+      });
+
+    });
+  }
+
+  disconnect() {
+    this.connection.end();
+  }
+}
+
+//  One and only exported function, returns a connected repo.
+module.exports.connect = (connectionSettings) =&gt; {  
+  return new Promise((resolve, reject) =&gt; {
+    if(!connectionSettings.host) throw new Error(&quot;A host must be specified.&quot;);
+    if(!connectionSettings.user) throw new Error(&quot;A user must be specified.&quot;);
+    if(!connectionSettings.password) throw new Error(&quot;A password must be specified.&quot;);
+    if(!connectionSettings.port) throw new Error(&quot;A port must be specified.&quot;);
+
+    resolve(new Repository(mysql.createConnection(connectionSettings)));
+  });
+};
+</code></pre>
+
+<p>做这些肯定有更好的方法！但是基本上我们可以创建一个像这样的<code>Repository</code>对象：</p>
+
+<pre><code class="language-javascript">repository.connect({  
+  host: &quot;127.0.0.1&quot;,
+  database: &quot;users&quot;,
+  user: &quot;users_service&quot;,
+  password: &quot;123&quot;,
+  port: 3306
+}).then((repo) =&gt; {
+  repo.getUsers().then(users) =&gt; {
+    console.log(users);
+  });
+  repo.getUserByEmail('homer@thesimpsons.com').then((user) =&gt; {
+    console.log(user);
+  })
+  //  ...when you are done...
+  repo.disconnect();
+});
+</code></pre>
+
+<p>在<code>repository/repository.spec.js</code>文件里有一些单元测试。我们现在有repo了就可以创建一个服务器。这是<code>server/server.js</code>里面的内容：</p>
+
+<pre><code class="language-javascript">//  server.js
+
+var express = require('express');  
+var morgan = require('morgan');
+
+module.exports.start = (options) =&gt; {
+
+  return new Promise((resolve, reject) =&gt; {
+
+    //  Make sure we have a repository and port provided.
+    if(!options.repository) throw new Error(&quot;A server must be started with a connected repository.&quot;);
+    if(!options.port) throw new Error(&quot;A server must be started with a port.&quot;);
+
+    //  Create the app, add some logging.
+    var app = express();
+    app.use(morgan('dev'));
+
+    //  Add the APIs to the app.
+    require('../api/users')(app, options);
+
+    //  Start the app, creating a running server which we return.
+    var server = app.listen(options.port, () =&gt; {
+      resolve(server);
+    });
+
+  });
+};
+</code></pre>
+
+<p>这个模块抛出一个<code>start</code>函数，我们可以这么调用：</p>
+
+<pre><code class="language-javascript">var server = require('./server/server);  
+server.start({port: 8080, repo: repository}).then((svr) =&gt; {  
+  // we've got a running http server :)
+});
+</code></pre>
+
+<p>发现<code>server.js</code>用到了<code>api/users.js</code>？这是它的内容：</p>
+
+<pre><code class="language-javascript">//  users.js
+//
+//  Defines the users api. Add to a server by calling:
+//  require('./users')
+'use strict';
+
+//  Only export - adds the API to the app with the given options.
+module.exports = (app, options) =&gt; {
+
+  app.get('/users', (req, res, next) =&gt; {
+    options.repository.getUsers().then((users) =&gt; {
+      res.status(200).send(users.map((user) =&gt; { return {
+          email: user.email,
+          phoneNumber: user.phone_number
+        };
+      }));
+    })
+    .catch(next);
+  });
+
+  app.get('/search', (req, res) =&gt; {
+
+    //  Get the email.
+    var email = req.query.email;
+    if (!email) {
+      throw new Error(&quot;When searching for a user, the email must be specified, e.g: '/search?email=homer@thesimpsons.com'.&quot;);
+    }
+
+    //  Get the user from the repo.
+    options.repository.getUserByEmail(email).then((user) =&gt; {
+
+      if(!user) { 
+        res.status(404).send('User not found.');
+      } else {
+        res.status(200).send({
+          email: user.email,
+          phoneNumber: user.phone_number
+        });
+      }
+    })
+    .catch(next);
+
+  });
+};
+</code></pre>
+
+<p>在源代码里这些代码都有测试。</p>
+
+<p>我们需要有个配置文件。与其用一个库，用一个文件就可以了<code>config/config.js</code>：</p>
+
+<pre><code class="language-javascript">//  config.js
+//
+//  Simple application configuration. Extend as needed.
+module.exports = {  
+    port: process.env.PORT || 8123,
+  db: {
+    host: process.env.DATABASE_HOST || '127.0.0.1',
+    database: 'users',
+    user: 'users_service',
+    password: '123',
+    port: 3306
+  }
+};
+</code></pre>
+
+<p>我们可以在需要的时候<code>require</code>这个配置。现在，大部分的配置都是写死的，但是你可以从<code>port</code>字段那里看到在配置里加入环境变量是很简单的。</p>
+
+<p>最后一步，在<code>index.js</code>里面把多有的文件都串起来：</p>
+
+<pre><code class="language-javascript">//    index.js
+//
+//  Entrypoint to the application. Opens a repository to the MySQL
+//  server and starts the server.
+var server = require('./server/server');  
+var repository = require('./repository/repository');  
+var config = require('./config/config');
+
+//  Lots of verbose logging when we're starting up...
+console.log(&quot;--- Customer Service---&quot;);  
+console.log(&quot;Connecting to customer repository...&quot;);
+
+//  Log unhandled exceptions.
+process.on('uncaughtException', function(err) {  
+  console.error('Unhandled Exception', err);
+});
+process.on('unhandledRejection', function(err, promise){  
+  console.error('Unhandled Rejection', err);
+});
+
+repository.connect({  
+  host: config.db.host,
+  database: config.db.database,
+  user: config.db.user,
+  password: config.db.password,
+  port: config.db.port
+}).then((repo) =&gt; {
+  console.log(&quot;Connected. Starting server...&quot;);
+
+  return server.start({
+    port: config.port,
+    repository: repo
+  });
+
+}).then((app) =&gt; {
+  console.log(&quot;Server started successfully, running on port &quot; + config.port + &quot;.&quot;);
+  app.on('close', () =&gt; {
+    repository.disconnect();
+  });
+});
+</code></pre>
+
+<p>我们做了一点错误处理，然后我们只是加载了配置，创建了一个repo启动服务器。</p>
+
+<p>这就是这个微型服务。它让我们可以获取所有用户的信息，或者搜索用户。</p>
+
+<pre><code>HTTP GET /users                              # gets all users  
+HTTP GET /search?email=homer@thesimpons.com  # searches by email 
+</code></pre>
+
+<p>如果你看了代码，你会发现已经准备好了一些命令：</p>
+
+<pre><code>cd ./users-service  
+npm install         # setup everything  
+npm test            # unit test - no need for a test database running  
+npm start           # run the server - you must have a test database running  
+npm run debug       # run the server in debug mode, opens a browser with the inspector  
+npm run lint        # check to see if the code is beautiful  
+</code></pre>
+
+<p>除了代码，你发现我们还有：</p>
+
+<ol>
+<li>为了debug用的Node Inspector</li>
+<li>Mocha/shoud/supertest 来做单元测试</li>
+<li>ESLint规范代码</li>
+</ol>
+
+<p>就是这样！</p>
+
+<p>用下面的代码运行测试数据库：</p>
+
+<pre><code>cd test-database/  
+./start.sh
+</code></pre>
+
+<p>然后用下面的代码运行服务：</p>
+
+<pre><code>cd ../users-service/  
+npm start  
+</code></pre>
+
+<p>你可以用你的浏览器打开<strong>localhost:8123/users</strong>来看看效果。如果你用Docker Machine(比如你在用Mac或者Windows)，那么<code>localhost</code>不会起作用，你需要用Docker Machine的IP地址。你可以用<code>docker-machine ip</code>命令来获取地址。</p>
+
+<p>我们花了一点点时间来快速构建这个服务。如果你想要看到现在的代码，请查看<a href="https://github.com/dwmkerr/node-docker-mircroservice/tree/step2">step2</a>分支。</p>
+
+<h2 id="第三步-docker我们的微型服务">第三步：Docker我们的微型服务</h2>
+
+<p>好玩的来了！</p>
+
+<p>所以现在我们可以在一个测试容器中运行我们的微型服务了，只要它有一个可以兼容的版本的Node.js。我们想做的是设置好我们的服务然后基于它创建一个Docker映像，让我们可以在支持Docker的任何地方部署它。</p>
+
+<p>我们做这个方法是创建一个_Dockerfile_。一个Dockerfile是一个告诉Docker怎么创建映像的配方。我们在<code>users-service</code>文件夹里面创建一个简单的Dockerfile，然后看看我们能怎么利用这个文件。</p>
+
+<h3 id="创建一个dockerfile">创建一个Dockerfile</h3>
+
+<p>在<code>users-service/</code>创建一个叫<code>Dockerfile</code>的文件，内容如下：</p>
+
+<pre><code># Use Node v4 as the base image.
+FROM node:4
+
+# Run node 
+CMD [&quot;node&quot;]
+</code></pre>
+
+<p>现在运行下面的语句来构建映像，然后基于映像运行一个容器：</p>
+
+<pre><code>docker build -t node4 .    # Builds a new image  
+docker run -it node4       # Run a container with this image, interactive  
+</code></pre>
+
+<p>我们来看看构建命令先：</p>
+
+<ol>
+<li><code>docker build</code>告诉Docker我们想要创建一个映像</li>
+<li><code>-t node4</code>给这个映像打了一个<code>node4</code>标签。现在开始我们就可以用这个标签引用它了。</li>
+<li><code>.</code>用当前目录来获取<code>Dockerfile</code>。</li>
+</ol>
+
+<p>控制台输出一些东西之后你会看到我们有了一个新的映像。你可以用<code>docker images</code>命令来查看所有映像。第二行命令看上去就很眼熟了：</p>
+
+<ol>
+<li><code>docker run</code>命令会基于一个映像运行一个新的容器。</li>
+<li><code>-it</code>表示使用交互命令行。</li>
+<li><code>node4</code>是我们想要用的镜像的tag。</li>
+</ol>
+
+<p>当我们运行这个映像的时候，我们会得到一个node REPL。查看当前版本：</p>
+
+<pre><code>&gt; process.version
+'v4.4.0'  
+&gt; process.exit(0)
+</code></pre>
+
+<p>这和你当前计算机上的node版本应该不一样。</p>
+
+<h3 id="分析dockerfile">分析Dockerfile</h3>
+
+<p>查看dockerfile我们可以轻易的发现：</p>
+
+<ol>
+<li><code>FROM node:4</code> 我们在Dockerfile里面做的第一件事就是指定基础映像。简单的google一下我们发现<a href="https://hub.docker.com/_/node/">node在docker hub上面的页面</a>显示了所有可用的映像。基本上就是一个只装了node的ubuntu。</li>
+<li><code>CMD [&quot;node&quot;]</code> <code>CMD</code> 命令告诉docker这个映像要运行node命令。当可执行的程序结束时，容器就关闭。</li>
+</ol>
+
+<p>再多加几行命令，我们就能让这个Dockerfile运行我们的服务。</p>
+
+<pre><code># Use Node v4 as the base image.
+FROM node:4
+
+# Add everything in the current directory to our image, in the 'app' folder.
+ADD . /app
+
+# Install dependencies
+RUN cd /app; \  
+    npm install --production
+
+# Expose our server port.
+EXPOSE 8123
+
+# Run our app.
+CMD [&quot;node&quot;, &quot;/app/index.js&quot;]
+</code></pre>
+
+<p>我们在这里添加的就是用 <code>ADD</code> 命令将当前文件夹下面的所有东西<sup>[1]</sup>拷贝到了容器中的 <code>app/</code> 文件夹里。然后我们用 <code>RUN</code> 来在映像里执行一个安装包的命令。最后，我们 <code>EXPOSE</code> 服务器端口，告诉docker我们想要在 <code>8123</code> 端口监听连接，然后执行服务器代码。</p>
+
+<p>为了确保测试服务器可以运行，我们再次构件并运行这个映像：</p>
+
+<pre><code>docker build -t users-service .  
+docker run -it -p 8123:8123 users-service
+</code></pre>
+
+<p>如果你打开浏览器访问 <code>localhost:8123/users</code> 你会看到一个错误信息。检查控制台会发现我们的容器在报告这个问题：</p>
+
+<pre><code>--- Customer Service---
+Connecting to customer repository...  
+Connected. Starting server...  
+Server started successfully, running on port 8123.  
+GET /users 500 23.958 ms - 582  
+Error: An error occured getting the users: Error: connect ECONNREFUSED 127.0.0.1:3306  
+    at Query._callback (/app/repository/repository.js:21:25)
+    at Query.Sequence.end (/app/node_modules/mysql/lib/protocol/sequences/Sequence.js:96:24)
+    at /app/node_modules/mysql/lib/protocol/Protocol.js:399:18
+    at Array.forEach (native)
+    at /app/node_modules/mysql/lib/protocol/Protocol.js:398:13
+    at nextTickCallbackWith0Args (node.js:420:9)
+    at process._tickCallback (node.js:349:13)
+</code></pre>
+
+<p>糟糕！你的 <code>users-service</code> 容器与 <code>test-database</code> 容器之间的连接被拒绝了。我们输入 <code>docker ps</code> 命令来看看都有哪些容器运行着：</p>
+
+<pre><code>CONTAINER ID  IMAGE          PORTS                   NAMES  
+a97958850c66  users-service  0.0.0.0:8123-&gt;8123/tcp  kickass_perlman  
+47f91343db01  mysql:latest   0.0.0.0:3306-&gt;3306/tcp  db
+</code></pre>
+
+<p>两个容器都在运行，发生了什么？</p>
+
+<h3 id="连接容器">连接容器</h3>
+
+<p>其实这个错误并不出乎我们的预料。Docker容器就本应该是独立的，所以我们不明确指定的话是不能连接的。</p>
+
+<p>是的，我们可以从我们的计算机连接到容器，因为我们打开了端口(比如用 <code>-p 8123:8123</code> 参数)。如果我们让容器之间也可以用这种方式，那么在同一台机器上的两个容器就可以沟通了。开发人员如果不想这样，那么这就是一个灾难性的设计。尤其是当我们有一个集群，它的任务就是在容器中运行不同的应用的时候。</p>
+
+<p>如果我们要从一个容器连接到另一个容器，我们需要_连接_它们，让docker知道我们明确的想让二者沟通。有两种方法可以做到，第一种有点&rsquo;老套&rsquo;但是很简单，第二种我们之后会见到。</p>
+
+<h4 id="用-link-参数连接容器">用&rsquo;link&rsquo;参数连接容器</h4>
+
+<p>当我们运行一个容器的时候，我们可以用 <code>link</code> 参数告诉docker我们想要连接到另一个容器。在我们这个例子里，我们可以这样执行我们的服务：</p>
+
+<pre><code>docker run -it -p 8123:8123 --link db:db -e DATABASE_HOST=DB users-service  
+</code></pre>
+
+<ol>
+<li><code>docker run -it</code> 在容器里运行了一个docker映像，并且提供了交互式控制台。</li>
+<li><code>-p 8123:8123</code> 将主机的8123端口映射到了容器的8123端口。</li>
+<li><code>link db:db</code> 把容器连接到了<code>db</code> 容器并且用 <code>db</code> 引用它。</li>
+<li><code>-e DATABASE_HOST=db</code> 设置 <code>db</code> 中的环境变量 <code>DATABASE_HOST</code>。</li>
+<li><code>users-service</code> 容器中映像的名字。</li>
+</ol>
+
+<p>现在我们再打开 <code>localhost:8123/users</code> ，一切都可以运行了。</p>
+
+<h5 id="它是怎么工作的">它是怎么工作的</h5>
+
+<p>还记得我们服务里的配置文件么？它让我们可以用环境变量来指定数据库的地址：</p>
+
+<pre><code class="language-javascript">//  config.js
+//
+//  Simple application configuration. Extend as needed.
+module.exports = {  
+    port: process.env.PORT || 8123,
+  db: {
+    host: process.env.DATABASE_HOST || '127.0.0.1',
+    database: 'users',
+    user: 'users_service',
+    password: '123',
+    port: 3306
+  }
+};
+</code></pre>
+
+<p>当我们运行这个容器时，我们吧这个环境变量设置为 <code>DB</code> ，表示我们在连接一个叫 <code>DB</code> 的主机。这个连接时docker <em>自动</em> 帮我们实现的。</p>
+
+<p>要真正证实这个行为，运行 <code>docker ps</code> 来列出所有运行的容器。看运行 <code>users-service</code> 映像的容器的名字，应该是个随机的名字比如 <code>trusting_jang</code> ：</p>
+
+<pre><code>docker ps  
+CONTAINER ID  IMAGE          ...   NAMES  
+ac9449d3d552  users-service  ...   trusting_jang  
+47f91343db01  mysql:latest   ...   db  
+</code></pre>
+
+<p>现在我们来看容器里可用的主机：</p>
+
+<pre><code>docker exec trusting_jang cat /etc/hosts  
+127.0.0.1    localhost  
+::1    localhost ip6-localhost ip6-loopback
+fe00::0    ip6-localnet  
+ff00::0    ip6-mcastprefix  
+ff02::1    ip6-allnodes  
+ff02::2    ip6-allrouters  
+172.17.0.2    db 47f91343db01    # linking magic!!  
+172.17.0.3    ac9449d3d552
+</code></pre>
+
+<p>还记得 <code>docker exec</code> 是怎么工作的么？选择一个容器的名字然后跟着的所有命令都是在容器中执行的，就像刚才我们 <code>cat /etc/hosts</code>。</p>
+
+<p>好吧其实你看到的hosts文件里面没有 <code># linking magic!!</code> 这样的注释，我加上是为了让你看到docker修改了hosts文件让我们能够用 <code>db</code> 引用到别的容器。这是连接之后的一个后果，另一个是这个：</p>
+
+<pre><code>docker exec trusting_jang printenv | grep DB  
+DB_PORT=tcp://172.17.0.2:3306  
+DB_PORT_3306_TCP=tcp://172.17.0.2:3306  
+DB_PORT_3306_TCP_ADDR=172.17.0.2  
+DB_PORT_3306_TCP_PORT=3306  
+DB_PORT_3306_TCP_PROTO=tcp  
+DB_NAME=/trusting_jang/db  
+</code></pre>
+
+<p>用这个命令我们也可以发现当docker连接容器的时候，它同样会在环境变量里面提供一系列的有用的信息。我们知道了主机，tcp端口和容器的名字。</p>
+
+<p>第三步就做完了，我们现在有一个MySQL数据库运行在容器里，我们有一个node.js服务可以在本地或者容器里运行，并且我们知道了怎么把它们连接到一起。</p>
+
+<p>你在 <a href="https://github.com/dwmkerr/node-docker-mircroservice/tree/step3">step3</a>分支里可以看这一步的代码。</p>
+
+<h2 id="第四步-环境的集成测试">第四步：环境的集成测试</h2>
+
+<p>现在我们就可以写一个集成测试来访问真实的服务器，运行docker容器并且访问容器中的测试数据库了。</p>
+
+<p>你可以用你喜欢的任何语言和平台来写集成测试，为了简单点，我就用Node.js里的Mocha和Supertest来写了。</p>
+
+<p>在 <code>integration-tests</code> 文件夹里，我们写一个 <code>index.js</code> ：</p>
+
+<pre><code class="language-javascript">var supertest = require('supertest');  
+var should = require('should');
+
+describe('users-service', () =&gt; {
+
+  var api = supertest('http://localhost:8123');
+
+  it('returns a 200 for a known user', (done) =&gt; {
+
+    api.get('/search?email=homer@thesimpsons.com')
+      .expect(200, done);
+  });
+
+});
+</code></pre>
+
+<p>这会检查一个API的访问并且显示测试的结果。<sup>[2]</sup></p>
+
+<p>只要你的 <code>users-service</code> 和 <code>test-database</code> 容器在运行，那么测试就会通过的。但是现在这些服务还是有点不太好处理：</p>
+
+<ol>
+<li>我们必须用脚本来启动和停止数据库。</li>
+<li>我们需要记住开启用户服务和数据库的命令顺序。</li>
+<li>我们需要直接用node运行集成测试。</li>
+</ol>
+
+<p>现在我们都更熟悉Docker了，我们能解决这些问题。</p>
+
+<h3 id="简化测试数据库">简化测试数据库</h3>
+
+<p>现在在测试数据库目录里有这些文件：</p>
+
+<pre><code>/test-database/start.sh
+/test-database/stop.sh
+/test-database/setup.sql
+</code></pre>
+
+<p>现在我们都更熟悉Docker了，我们可以改进。阅读Docker Hub上面的<a href="https://hub.docker.com/_/mysql/">mysql映像文档</a>我们发现，任何映像中<code>/docker-entrypoint-initdb.d</code> 文件夹下的 <code>.sql</code> 或者 <code>.sh</code> 文件都会在设置数据库时执行。</p>
+
+<p>这表明我们可以把 <code>start.sh</code> 和 <code>stop.sh</code> 中的内容添加到 <code>Dockerfile</code> ：</p>
+
+<pre><code>FROM mysql:5
+
+ENV MYSQL_ROOT_PASSWORD 123  
+ENV MYSQL_DATABASE users  
+ENV MYSQL_USER users_service  
+ENV MYSQL_PASSWORD 123
+
+ADD setup.sql /docker-entrypoint-initdb.d  
+</code></pre>
+
+<p>现在运行测试数据库就变成了：</p>
+
+<pre><code>docker build -t test-database
+docker run --name db test-database
+</code></pre>
+
+<h3 id="编纂">编纂</h3>
+
+<p>现在创建并且运行容器还是要费点功夫的。我们可以更进一步，用<a href="https://docs.docker.com/compose/">Docker Compose</a>工具。</p>
+
+<p>Docker Compose让你可以只创建一个文件，就定义你系统里的所有容器，它们之间的关系并且构建运行他们。</p>
+
+<p>首先，<a href="https://docs.docker.com/compose/install/">安装Docker Compose</a>。现在在你项目的根目录创建一个 <code>docker-compose.yml</code> 文件：</p>
+
+<pre><code>version: '2'  
+services:  
+  users-service:
+    build: ./users-service
+    ports:
+     - &quot;8123:8123&quot;
+    depends_on:
+     - db
+    environment:
+     - DATABASE_HOST=db
+  db:
+    build: ./test-database
+</code></pre>
+
+<p>现在来运行这个：</p>
+
+<pre><code>docker-compose build
+docker-compose up
+</code></pre>
+
+<p>Docker Compose现在已经构建了我们应用所需的所有映像，也创建了容器，用正确的方式开启了他们，总之就是有条不紊！</p>
+
+<p><code>docker-compose build</code> 命令构建了 <code>docker-compose.yml</code> 文件中列出的所有映像。</p>
+
+<p><code>yml</code> 文件中的 <code>build</code> 字段告诉了docker该去哪里找 <code>Dockerfile</code>。当我们运行 <code>docker-compose up</code> 的时候，docker会开启我们的所有服务。注意在 <code>Dockerfile</code> 里面我们可以指定端口和依赖。实际上我们在这个文件里可以修改很多配置。</p>
+
+<p>在另一个终端里，可以运行 <code>docker compose down</code> 来停掉所有的容器</p>
+
+<h2 id="总结">总结</h2>
+
+<p>在这篇文章里我们见识了很多docker的功能，但当然还有更多。我希望通过这篇文章，可以让你了解到在工作流里docker是多么的有帮助。你可以在<a href="https://github.com/dwmkerr/node-docker-mircroservice">这里</a>看到这篇文章的所有代码。并且我也强烈推荐<a href="https://docs.docker.com/engine/understanding-docker/">这篇文档</a>来更深入理解docker的原理。</p>
+
+<h2 id="脚注">脚注</h2>
+
+<ol>
+<li>拷贝所有的东西其实不是个好主意，因为我们也会把 node_modules 拷进去。更普遍的是明确列出哪些东西要拷贝，或者用 <code>.dockerignore</code> 文件，就像 <code>.gitignore</code> 文件一样。</li>
+<li>如果这个服务器没有在运行，它会显示一个招人烦的异常，是因为supertest里面的<a href="https://github.com/visionmedia/supertest/issues/314">一个bug</a>。</li>
+</ol>
+
+                </section>
+            </article>
+            
+
+            
+
+            <ul id="post-list" class="archive readmore">
+    <h3>Read more</h3>
+    
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/reinforcement-learning-and-control/">机器学习 第十三章 强化学习与控制<aside class="dates">Jul 4</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/independent-components-analysis/">机器学习 第十二章 独立成分分析<aside class="dates">Jun 2</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/principal-components-analysis/">机器学习 第十一章 主成分分析<aside class="dates">Jun 1</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/factor-analysis/">机器学习 第十章 因子分析<aside class="dates">May 31</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-em-algorithm/">机器学习 第九章 EM 算法<aside class="dates">May 18</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/the-perceptron-and-k-means/">机器学习 第八章 在线学习与K-means算法<aside class="dates">May 12</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/regularization-and-model-selection/">机器学习 第七章 一般化与模型选择<aside class="dates">Apr 28</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/learning-theory/">机器学习 第六章 机器学习理论<aside class="dates">Mar 24</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/support-vector-machine/">机器学习 第五章 支持向量机<aside class="dates">Mar 10</aside></a>
+        </li>
+        
+   
+    
+        
+        <li>
+            <a href="https://knightf.coding.me/post/generative-learning-algorithms/">机器学习 第四章 生成学习算法<aside class="dates">Mar 7</aside></a>
+        </li>
+        
+   
+</ul>
+            <footer id="footer">
+    
+        <div id="social">
+
+	
+	
+    
+    <a class="symbol" href="mailto:knightf@live.cn">
+        circleemail
+    </a>
+    
+    <a class="symbol" href="https://github.com/knightf">
+        circlegithub
+    </a>
+    
+    <a class="symbol" href="https://twitter.com/Errrrrrrrrrric">
+        circletwitterbird
+    </a>
+    
+
+
+</div>
+
+    
+    <p class="small">
+    
+        © Copyright 2017 韩飞
+    
+    </p>
+</footer>
+
+        </section>
+
+        <script src="//cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://knightf.coding.me/js/main.js"></script>
+
+<script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.4.0/highlight.min.js"></script>
+<script >hljs.initHighlightingOnLoad();</script>  
+
+
+    </body>
+</html>

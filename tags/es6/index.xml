@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Es6 on 韩飞的博客</title>
+    <link>https://knightf.coding.me/tags/es6/index.xml</link>
+    <description>Recent content in Es6 on 韩飞的博客</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh</language>
+    <atom:link href="https://knightf.coding.me/tags/es6/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Generator的next方法</title>
+      <link>https://knightf.coding.me/post/generator-next/</link>
+      <pubDate>Wed, 01 Jun 2016 15:36:16 +0800</pubDate>
+      
+      <guid>https://knightf.coding.me/post/generator-next/</guid>
+      <description>&lt;p&gt;使用&lt;code&gt;function*&lt;/code&gt;声明的Generator函数，其实并不是立即执行的函数，它返回一个&lt;code&gt;Generator&lt;/code&gt;对象。这个对象主要的方法就是&lt;code&gt;next&lt;/code&gt;方法。使用&lt;code&gt;next&lt;/code&gt;方法就可以一步步的执行这个&lt;code&gt;Generator&lt;/code&gt;对象中的语句。&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;function* gen() { 
+  yield 1;
+  yield 2;
+  yield 3;
+}
+
+var g = gen();
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;上面的代码中&lt;code&gt;g&lt;/code&gt;就是一个&lt;code&gt;Generator&lt;/code&gt;对象，不断调用它的&lt;code&gt;next&lt;/code&gt;方法，就会依次输出1、2和3。调用&lt;code&gt;next&lt;/code&gt;方法，返回的是一个对象，这个对象有两个属性：&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;done: 布尔值，表示这个&lt;code&gt;Generator&lt;/code&gt;对象是不是已经没有更多代码可以执行了。&lt;/li&gt;
+&lt;li&gt;value: 就是&lt;code&gt;yield&lt;/code&gt;关键字后面表达式执行的结果。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;同时，&lt;code&gt;next&lt;/code&gt;方法还有一个形参&lt;code&gt;value&lt;/code&gt;。如果在调用&lt;code&gt;next&lt;/code&gt;方法的时候给定了这个形参，那么在这一步的执行过程中，&lt;code&gt;yield&lt;/code&gt;后面表达式的值就会被替换成这个形参，所以一次&lt;code&gt;next&lt;/code&gt;方法执行的顺序可以归纳成：&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;执行&lt;code&gt;yield&lt;/code&gt;关键字后面的表达式得到值&lt;code&gt;temp&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;如果&lt;code&gt;next&lt;/code&gt;方法传入了&lt;code&gt;value&lt;/code&gt;，&lt;code&gt;temp = value&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;包含&lt;code&gt;yield&lt;/code&gt;关键字的这一完整表达式，值为&lt;code&gt;temp&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;需要&lt;strong&gt;注意&lt;/strong&gt;的一点是，当执行Generator函数得到&lt;code&gt;Generator&lt;/code&gt;之后，这个对象中的第一段代码块并没有执行，一定要执行一次&lt;code&gt;next&lt;/code&gt;方法才会真正启动这个&lt;code&gt;Generator&lt;/code&gt;。&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
