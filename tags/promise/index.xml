@@ -2,18 +2,18 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Promise on 韩飞的博客</title>
-    <link>https://knightf.coding.me/tags/promise/index.xml</link>
+    <link>https://knightf.github.io/tags/promise/index.xml</link>
     <description>Recent content in Promise on 韩飞的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
-    <atom:link href="https://knightf.coding.me/tags/promise/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://knightf.github.io/tags/promise/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>回头看Promise</title>
-      <link>https://knightf.coding.me/post/promise-review/</link>
+      <link>https://knightf.github.io/post/promise-review/</link>
       <pubDate>Thu, 13 Oct 2016 20:08:41 +0800</pubDate>
       
-      <guid>https://knightf.coding.me/post/promise-review/</guid>
+      <guid>https://knightf.github.io/post/promise-review/</guid>
       <description>
 
 &lt;p&gt;一个 Promise 对象，有三种状态：&lt;/p&gt;

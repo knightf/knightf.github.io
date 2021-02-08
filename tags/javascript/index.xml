@@ -2,18 +2,18 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Javascript on 韩飞的博客</title>
-    <link>https://knightf.coding.me/tags/javascript/index.xml</link>
+    <link>https://knightf.github.io/tags/javascript/index.xml</link>
     <description>Recent content in Javascript on 韩飞的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
-    <atom:link href="https://knightf.coding.me/tags/javascript/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://knightf.github.io/tags/javascript/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>回头看Promise</title>
-      <link>https://knightf.coding.me/post/promise-review/</link>
+      <link>https://knightf.github.io/post/promise-review/</link>
       <pubDate>Thu, 13 Oct 2016 20:08:41 +0800</pubDate>
       
-      <guid>https://knightf.coding.me/post/promise-review/</guid>
+      <guid>https://knightf.github.io/post/promise-review/</guid>
       <description>
 
 &lt;p&gt;一个 Promise 对象，有三种状态：&lt;/p&gt;
@@ -221,10 +221,10 @@ function Promise(fn) {
     
     <item>
       <title>Karma入门－JavaScript单元测试</title>
-      <link>https://knightf.coding.me/post/karma-tutorial/</link>
+      <link>https://knightf.github.io/post/karma-tutorial/</link>
       <pubDate>Fri, 29 Jul 2016 11:26:01 +0800</pubDate>
       
-      <guid>https://knightf.coding.me/post/karma-tutorial/</guid>
+      <guid>https://knightf.github.io/post/karma-tutorial/</guid>
       <description>
 
 &lt;p&gt;&lt;a href=&#34;http://www.bradoncode.com/blog/2015/02/27/karma-tutorial/&#34;&gt;阅读原文&lt;/a&gt;&lt;/p&gt;
@@ -589,10 +589,10 @@ it(&#39;should return 3 for 1 + 2&#39;, function() {
     
     <item>
       <title>一个连接React和Redux的注意事项</title>
-      <link>https://knightf.coding.me/post/react-redux-shallowe-qual/</link>
+      <link>https://knightf.github.io/post/react-redux-shallowe-qual/</link>
       <pubDate>Tue, 21 Jun 2016 11:43:06 +0800</pubDate>
       
-      <guid>https://knightf.coding.me/post/react-redux-shallowe-qual/</guid>
+      <guid>https://knightf.github.io/post/react-redux-shallowe-qual/</guid>
       <description>&lt;p&gt;用 &lt;code&gt;react-redux&lt;/code&gt; 连接 &lt;code&gt;React&lt;/code&gt; 和 &lt;code&gt;Redux&lt;/code&gt; 的时候，需要 &lt;code&gt;mapStateToProps&lt;/code&gt; 这个函数来把 &lt;code&gt;store&lt;/code&gt; 里面的内容映射到组建的 &lt;code&gt;props&lt;/code&gt; 里面。这个 &lt;code&gt;mapStateToProps&lt;/code&gt; 函数并不会总是把值赋给组件，它会执行一个 &lt;a href=&#34;https://github.com/reactjs/react-redux/blob/master/src/utils/shallowEqual.js&#34;&gt;&lt;code&gt;shallowEqual&lt;/code&gt;&lt;/a&gt; 函数，而这个函数就像它的名字一样忠诚的履行着“浅浅”的比较。&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;export default function shallowEqual(objA, objB) {
@@ -630,10 +630,10 @@ it(&#39;should return 3 for 1 + 2&#39;, function() {
     
     <item>
       <title>JavaScript函数式开发概念：Curry代码</title>
-      <link>https://knightf.coding.me/post/functional-javascript-concepts-currying/</link>
+      <link>https://knightf.github.io/post/functional-javascript-concepts-currying/</link>
       <pubDate>Mon, 13 Jun 2016 18:39:15 +0800</pubDate>
       
-      <guid>https://knightf.coding.me/post/functional-javascript-concepts-currying/</guid>
+      <guid>https://knightf.github.io/post/functional-javascript-concepts-currying/</guid>
       <description>
 
 &lt;p&gt;&lt;a href=&#34;https://blog.simpleblend.net/functional-javascript-concepts-currying/&#34;&gt;阅读原文&lt;/a&gt;&lt;/p&gt;
@@ -782,10 +782,10 @@ animals.filter(isAnimal(&amp;quot;Cat&amp;quot;));
     
     <item>
       <title>Generator的next方法</title>
-      <link>https://knightf.coding.me/post/generator-next/</link>
+      <link>https://knightf.github.io/post/generator-next/</link>
       <pubDate>Wed, 01 Jun 2016 15:36:16 +0800</pubDate>
       
-      <guid>https://knightf.coding.me/post/generator-next/</guid>
+      <guid>https://knightf.github.io/post/generator-next/</guid>
       <description>&lt;p&gt;使用&lt;code&gt;function*&lt;/code&gt;声明的Generator函数，其实并不是立即执行的函数，它返回一个&lt;code&gt;Generator&lt;/code&gt;对象。这个对象主要的方法就是&lt;code&gt;next&lt;/code&gt;方法。使用&lt;code&gt;next&lt;/code&gt;方法就可以一步步的执行这个&lt;code&gt;Generator&lt;/code&gt;对象中的语句。&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;function* gen() { 

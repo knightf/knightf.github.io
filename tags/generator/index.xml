@@ -2,18 +2,18 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Generator on 韩飞的博客</title>
-    <link>https://knightf.coding.me/tags/generator/index.xml</link>
+    <link>https://knightf.github.io/tags/generator/index.xml</link>
     <description>Recent content in Generator on 韩飞的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
-    <atom:link href="https://knightf.coding.me/tags/generator/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://knightf.github.io/tags/generator/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Generator的next方法</title>
-      <link>https://knightf.coding.me/post/generator-next/</link>
+      <link>https://knightf.github.io/post/generator-next/</link>
       <pubDate>Wed, 01 Jun 2016 15:36:16 +0800</pubDate>
       
-      <guid>https://knightf.coding.me/post/generator-next/</guid>
+      <guid>https://knightf.github.io/post/generator-next/</guid>
       <description>&lt;p&gt;使用&lt;code&gt;function*&lt;/code&gt;声明的Generator函数，其实并不是立即执行的函数，它返回一个&lt;code&gt;Generator&lt;/code&gt;对象。这个对象主要的方法就是&lt;code&gt;next&lt;/code&gt;方法。使用&lt;code&gt;next&lt;/code&gt;方法就可以一步步的执行这个&lt;code&gt;Generator&lt;/code&gt;对象中的语句。&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;function* gen() { 

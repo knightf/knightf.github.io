@@ -2,18 +2,18 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Docker on 韩飞的博客</title>
-    <link>https://knightf.coding.me/tags/docker/index.xml</link>
+    <link>https://knightf.github.io/tags/docker/index.xml</link>
     <description>Recent content in Docker on 韩飞的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
-    <atom:link href="https://knightf.coding.me/tags/docker/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://knightf.github.io/tags/docker/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>通过构建一个微型服务学习Docker</title>
-      <link>https://knightf.coding.me/post/learn-docker-by-building-a-microservice/</link>
+      <link>https://knightf.github.io/post/learn-docker-by-building-a-microservice/</link>
       <pubDate>Mon, 06 Jun 2016 14:43:42 +0800</pubDate>
       
-      <guid>https://knightf.coding.me/post/learn-docker-by-building-a-microservice/</guid>
+      <guid>https://knightf.github.io/post/learn-docker-by-building-a-microservice/</guid>
       <description>
 
 &lt;p&gt;&lt;a href=&#34;http://www.dwmkerr.com/learn-docker-by-building-a-microservice/&#34;&gt;阅读原文&lt;/a&gt;&lt;/p&gt;
@@ -24,7 +24,7 @@
 
 &lt;p&gt;在例子里我们将会用Node.js服务搭配MySQL后台的配置，从运行本地代码到生成运行服务和数据库的容器。&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;https://knightf.coding.me/images/learn-docker-by-building-a-microservice-pic1.png&#34; alt=&#34;示意图&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://knightf.github.io/images/learn-docker-by-building-a-microservice-pic1.png&#34; alt=&#34;示意图&#34; /&gt;&lt;/p&gt;
 
 &lt;h2 id=&#34;什么是docker&#34;&gt;什么是Docker?&lt;/h2&gt;
 
@@ -71,7 +71,7 @@ root@719059da250d:/# exit
 
 &lt;p&gt;这是个从Docker文档&lt;a href=&#34;https://docs.docker.com/v1.8/introduction/understanding-docker/&#34;&gt;理解架构&lt;/a&gt;里面摘出来的一个很棒的示意图：&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;https://knightf.coding.me/images/learn-docker-by-building-a-microservice-pic2.png&#34; alt=&#34;示意图&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://knightf.github.io/images/learn-docker-by-building-a-microservice-pic2.png&#34; alt=&#34;示意图&#34; /&gt;&lt;/p&gt;
 
 &lt;ol&gt;
 &lt;li&gt;我们敲了一个命令&lt;/li&gt;

@@ -2,18 +2,18 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Karma on 韩飞的博客</title>
-    <link>https://knightf.coding.me/tags/karma/index.xml</link>
+    <link>https://knightf.github.io/tags/karma/index.xml</link>
     <description>Recent content in Karma on 韩飞的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
-    <atom:link href="https://knightf.coding.me/tags/karma/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://knightf.github.io/tags/karma/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Karma入门－JavaScript单元测试</title>
-      <link>https://knightf.coding.me/post/karma-tutorial/</link>
+      <link>https://knightf.github.io/post/karma-tutorial/</link>
       <pubDate>Fri, 29 Jul 2016 11:26:01 +0800</pubDate>
       
-      <guid>https://knightf.coding.me/post/karma-tutorial/</guid>
+      <guid>https://knightf.github.io/post/karma-tutorial/</guid>
       <description>
 
 &lt;p&gt;&lt;a href=&#34;http://www.bradoncode.com/blog/2015/02/27/karma-tutorial/&#34;&gt;阅读原文&lt;/a&gt;&lt;/p&gt;

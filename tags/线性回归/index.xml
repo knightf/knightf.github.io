@@ -2,18 +2,18 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>线性回归 on 韩飞的博客</title>
-    <link>https://knightf.coding.me/tags/%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/index.xml</link>
+    <link>https://knightf.github.io/tags/%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/index.xml</link>
     <description>Recent content in 线性回归 on 韩飞的博客</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
-    <atom:link href="https://knightf.coding.me/tags/%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://knightf.github.io/tags/%E7%BA%BF%E6%80%A7%E5%9B%9E%E5%BD%92/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>机器学习 第一章 线性回归</title>
-      <link>https://knightf.coding.me/post/linear-regression/</link>
+      <link>https://knightf.github.io/post/linear-regression/</link>
       <pubDate>Fri, 17 Feb 2017 17:22:16 +0800</pubDate>
       
-      <guid>https://knightf.coding.me/post/linear-regression/</guid>
+      <guid>https://knightf.github.io/post/linear-regression/</guid>
       <description>
 
 &lt;p&gt;对于由 &lt;code&gt;$m$&lt;/code&gt; 个 &lt;code&gt;$n$&lt;/code&gt; 维的特征向量 &lt;code&gt;$x_n$&lt;/code&gt; 构成的数据集，我们希望求得一个函数形如：&lt;/p&gt;

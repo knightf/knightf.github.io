@@ -2,214 +2,214 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://knightf.coding.me/post/reinforcement-learning-and-control/</loc>
+    <loc>https://knightf.github.io/post/reinforcement-learning-and-control/</loc>
     <lastmod>2017-07-04T18:01:00+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/independent-components-analysis/</loc>
+    <loc>https://knightf.github.io/post/independent-components-analysis/</loc>
     <lastmod>2017-06-02T16:56:00+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/principal-components-analysis/</loc>
+    <loc>https://knightf.github.io/post/principal-components-analysis/</loc>
     <lastmod>2017-06-01T15:04:00+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/factor-analysis/</loc>
+    <loc>https://knightf.github.io/post/factor-analysis/</loc>
     <lastmod>2017-05-31T18:32:00+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/the-em-algorithm/</loc>
+    <loc>https://knightf.github.io/post/the-em-algorithm/</loc>
     <lastmod>2017-05-18T18:28:00+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/the-perceptron-and-k-means/</loc>
+    <loc>https://knightf.github.io/post/the-perceptron-and-k-means/</loc>
     <lastmod>2017-05-12T14:47:00+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/regularization-and-model-selection/</loc>
+    <loc>https://knightf.github.io/post/regularization-and-model-selection/</loc>
     <lastmod>2017-04-28T18:24:00+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/learning-theory/</loc>
+    <loc>https://knightf.github.io/post/learning-theory/</loc>
     <lastmod>2017-03-24T17:06:00+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/support-vector-machine/</loc>
+    <loc>https://knightf.github.io/post/support-vector-machine/</loc>
     <lastmod>2017-03-10T16:43:00+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/generative-learning-algorithms/</loc>
+    <loc>https://knightf.github.io/post/generative-learning-algorithms/</loc>
     <lastmod>2017-03-07T17:29:00+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/generalized-linear-models/</loc>
+    <loc>https://knightf.github.io/post/generalized-linear-models/</loc>
     <lastmod>2017-03-01T11:32:00+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/classification-and-logistic-regression/</loc>
+    <loc>https://knightf.github.io/post/classification-and-logistic-regression/</loc>
     <lastmod>2017-02-22T11:58:30+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/linear-regression/</loc>
+    <loc>https://knightf.github.io/post/linear-regression/</loc>
     <lastmod>2017-02-17T17:22:16+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/promise-review/</loc>
+    <loc>https://knightf.github.io/post/promise-review/</loc>
     <lastmod>2016-10-13T20:08:41+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/karma-tutorial/</loc>
+    <loc>https://knightf.github.io/post/karma-tutorial/</loc>
     <lastmod>2016-07-29T11:26:01+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/react-redux-shallowe-qual/</loc>
+    <loc>https://knightf.github.io/post/react-redux-shallowe-qual/</loc>
     <lastmod>2016-06-21T11:43:06+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/functional-javascript-concepts-currying/</loc>
+    <loc>https://knightf.github.io/post/functional-javascript-concepts-currying/</loc>
     <lastmod>2016-06-13T18:39:15+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/caliban/</loc>
+    <loc>https://knightf.github.io/post/caliban/</loc>
     <lastmod>2016-06-11T17:35:48+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/learn-docker-by-building-a-microservice/</loc>
+    <loc>https://knightf.github.io/post/learn-docker-by-building-a-microservice/</loc>
     <lastmod>2016-06-06T14:43:42+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/generator-next/</loc>
+    <loc>https://knightf.github.io/post/generator-next/</loc>
     <lastmod>2016-06-01T15:36:16+08:00</lastmod>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/curry%E5%87%BD%E6%95%B0/</loc>
+    <loc>https://knightf.github.io/tags/curry%E5%87%BD%E6%95%B0/</loc>
     <lastmod>2016-06-13T18:39:15+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/docker/</loc>
+    <loc>https://knightf.github.io/tags/docker/</loc>
     <lastmod>2016-06-06T14:43:42+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/es5/</loc>
+    <loc>https://knightf.github.io/tags/es5/</loc>
     <lastmod>2016-10-13T20:08:41+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/es6/</loc>
+    <loc>https://knightf.github.io/tags/es6/</loc>
     <lastmod>2016-06-01T15:36:16+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/generator/</loc>
+    <loc>https://knightf.github.io/tags/generator/</loc>
     <lastmod>2016-06-01T15:36:16+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/javascript/</loc>
+    <loc>https://knightf.github.io/tags/javascript/</loc>
     <lastmod>2016-10-13T20:08:41+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/karma/</loc>
+    <loc>https://knightf.github.io/tags/karma/</loc>
     <lastmod>2016-07-29T11:26:01+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/machine-learning/</loc>
+    <loc>https://knightf.github.io/tags/machine-learning/</loc>
     <lastmod>2017-07-04T18:01:00+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/post/</loc>
+    <loc>https://knightf.github.io/post/</loc>
     <lastmod>2017-07-04T18:01:00+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/promise/</loc>
+    <loc>https://knightf.github.io/tags/promise/</loc>
     <lastmod>2016-10-13T20:08:41+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/react/</loc>
+    <loc>https://knightf.github.io/tags/react/</loc>
     <lastmod>2016-06-21T11:43:06+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/redux/</loc>
+    <loc>https://knightf.github.io/tags/redux/</loc>
     <lastmod>2016-06-21T11:43:06+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/stanford-cs229/</loc>
+    <loc>https://knightf.github.io/tags/stanford-cs229/</loc>
     <lastmod>2017-07-04T18:01:00+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/</loc>
+    <loc>https://knightf.github.io/tags/</loc>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B/</loc>
+    <loc>https://knightf.github.io/tags/%E5%87%BD%E6%95%B0%E5%BC%8F%E7%BC%96%E7%A8%8B/</loc>
     <lastmod>2016-06-13T18:39:15+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83/</loc>
+    <loc>https://knightf.github.io/tags/%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83/</loc>
     <lastmod>2016-07-29T11:26:01+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/%E6%B5%8B%E8%AF%95/</loc>
+    <loc>https://knightf.github.io/tags/%E6%B5%8B%E8%AF%95/</loc>
     <lastmod>2016-07-29T11:26:01+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/tags/%E8%84%91%E6%B4%9E/</loc>
+    <loc>https://knightf.github.io/tags/%E8%84%91%E6%B4%9E/</loc>
     <lastmod>2016-06-11T17:35:48+08:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://knightf.coding.me/</loc>
+    <loc>https://knightf.github.io/</loc>
     <lastmod>2017-07-04T18:01:00+08:00</lastmod>
     <priority>0</priority>
   </url>
